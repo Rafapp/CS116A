@@ -2,7 +2,12 @@
 
 //--------------------------------------------------------------
 void ofApp::setup(){
+	ofSetBackgroundColor(ofColor::black);
+	cam.setDistance(10);
+	cam.setNearClip(.1);
+	ofEnableDepthTest();
 
+	
 }
 
 //--------------------------------------------------------------
@@ -12,7 +17,21 @@ void ofApp::update(){
 
 //--------------------------------------------------------------
 void ofApp::draw(){
+	cam.begin();
 
+	// Grid
+	ofPushMatrix();
+	ofSetColor(ofColor::dimGray);
+	ofRotateDeg(90);
+	ofDrawGridPlane();
+	ofPopMatrix();
+
+	// Drawing
+	ofSetColor(ofColor::white);
+	ofNoFill();
+	mesh.draw();
+
+	cam.end();
 }
 
 //--------------------------------------------------------------
