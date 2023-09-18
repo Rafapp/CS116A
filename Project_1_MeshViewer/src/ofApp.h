@@ -18,6 +18,14 @@ class Mesh {
 		// Vector of triangles <v1, v2, v3>
 		vector<glm::vec3> tris;
 
+		// Size (calculated after setup)
+		int triCount = 0;
+		int vertCount = 0;
+
+		bool drawAdjacent = false;
+		char selectedType = ' ';
+		int selectedIndex = 0;
+
 		string path;
 
 		Mesh();
@@ -26,6 +34,8 @@ class Mesh {
 		void setup();
 		void createTestShape();
 		void draw();
+		void drawSelected(vector<glm::vec3> tris);
+		void drawAdjacentTriangles();
 };
 
 /*
@@ -51,9 +61,15 @@ class ofApp : public ofBaseApp{
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
 
+		// Variables
+		
+		
 		// Objects
 		ofEasyCam cam;
 		ofxPanel gui;
-		ofxTextField text;
+		ofxLabel label;
+		ofxIntField numberField;
+		ofxButton vertexBtn;
+		ofxButton triangleBtn;
 };
 

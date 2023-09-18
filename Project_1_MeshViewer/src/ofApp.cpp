@@ -81,6 +81,9 @@ void Mesh::setup() {
 	cout << "Triangle memory: " << (fCount * 3 * 4)/1024. << " kb" << endl; 
 
 	cout << "Total memory: " << ((vCount * 3 * 4) / 1024. + (fCount * 3 * 4) / 1000.) << " kb" << endl;
+
+	vertCount = vCount; 
+	triCount = fCount;
 }
 
 void Mesh::createTestShape() {
@@ -102,6 +105,41 @@ void Mesh::draw() {
 	for (glm::vec3 tri : tris) {
 		ofDrawTriangle(verts[tri.x], verts[tri.y], verts[tri.z]);
 	}
+	if(drawAdjacent) drawAdjacentTriangles();
+}
+void Mesh::drawSelected(vector<glm::vec3> tris) {
+	ofSetColor(ofColor::green);
+	ofFill();
+	for (glm::vec3 tri : tris) {
+		cout << tri << endl;
+		ofDrawTriangle(verts[tri.x], verts[tri.y], verts[tri.z]);
+	}
+}
+
+void Mesh::drawAdjacentTriangles() {
+	// Select adjacent tris to face
+	if (selectedType == 'f') {
+		if (selectedIndex > triCount) return;
+
+		vector<glm::vec3> temp;
+		for (int i = -1; i < 3; i++) {
+			temp.push_back(tris[selectedIndex +i]);
+		}
+		mesh.drawSelected(temp);
+	}
+
+	// Select adjacent tris to vertex
+	else if (selectedType == 'v') {
+		if (selectedIndex > vertCount) return;
+
+		vector<glm::vec3> temp;  
+		for (glm::vec3 tri : tris) {
+			if (tri.x == selectedIndex || tri.y == selectedIndex || tri.z == selectedIndex) {
+				temp.push_back(tri);
+			}
+		}
+		mesh.drawSelected(temp);
+	}
 }
 
 
@@ -114,14 +152,16 @@ void ofApp::setup(){
 	ofSetBackgroundColor(ofColor::black);
 	cam.setDistance(10);
 	cam.setNearClip(.1);
-	ofEnableDepthTest();
 
 	// Mesh
 	mesh.setup();
 
 	// GUI
 	gui.setup();
-	//gui.add(text.setup())
+	gui.add(numberField.setup("Vertex/face #", 0, 1, INT_MAX));
+	gui.add(label.setup("", "Select nearby triangles"));
+	gui.add(vertexBtn.setup("Index is vertex"));
+	gui.add(triangleBtn.setup("Index is triangle"));
 }
 
 //--------------------------------------------------------------
@@ -146,6 +186,18 @@ void ofApp::draw(){
 	mesh.draw();
 
 	cam.end();
+
+	// GUI
+	gui.draw();
+	if (vertexBtn) {
+		mesh.selectedIndex = numberField;
+		mesh.drawAdjacent = true;
+	}
+	else if (triangleBtn) {
+		mesh.selectedIndex = numberField;
+		mesh.drawAdjacent = true;
+	}
+	else mesh.drawAdjacent = false;
 }
 
 //--------------------------------------------------------------
