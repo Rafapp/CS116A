@@ -1,7 +1,7 @@
 #include "ofApp.h"
 
 
-Mesh mesh("geo\\Woob.obj");
+Mesh mesh("geo\\Cube.obj");
 
 #pragma region Mesh
 Mesh::Mesh() { createTestShape(); }
@@ -105,7 +105,10 @@ void Mesh::draw() {
 	for (glm::vec3 tri : tris) {
 		ofDrawTriangle(verts[tri.x], verts[tri.y], verts[tri.z]);
 	}
-	if(drawAdjacent) drawAdjacentTriangles();
+	if (drawAdjacent)
+	{
+		drawAdjacentTriangles();
+	}
 }
 void Mesh::drawSelected(vector<glm::vec3> tris) {
 	ofSetColor(ofColor::green);
@@ -118,13 +121,17 @@ void Mesh::drawSelected(vector<glm::vec3> tris) {
 
 void Mesh::drawAdjacentTriangles() {
 	// Select adjacent tris to face
+	cout << selectedType << endl;
 	if (selectedType == 'f') {
+
 		if (selectedIndex > triCount) return;
 
 		vector<glm::vec3> temp;
-		for (int i = -1; i < 3; i++) {
+		/*for (int i = -2; i < 3; i++) {
 			temp.push_back(tris[selectedIndex +i]);
-		}
+		}*/
+		temp.push_back(tris[selectedIndex]);
+		temp.push_back(tris[selectedIndex - 1]);
 		mesh.drawSelected(temp);
 	}
 
@@ -190,14 +197,20 @@ void ofApp::draw(){
 	// GUI
 	gui.draw();
 	if (vertexBtn) {
+		mesh.selectedType = 'v';
 		mesh.selectedIndex = numberField;
 		mesh.drawAdjacent = true;
 	}
 	else if (triangleBtn) {
+		mesh.selectedType = 'f';
 		mesh.selectedIndex = numberField;
 		mesh.drawAdjacent = true;
 	}
-	else mesh.drawAdjacent = false;
+	else
+	{
+		mesh.selectedType = ' ';
+		mesh.drawAdjacent = false;
+	}
 }
 
 //--------------------------------------------------------------
