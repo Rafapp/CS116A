@@ -1,6 +1,7 @@
 #include "ofApp.h"
 
-Mesh mesh("geo\\cube.obj");
+
+Mesh mesh("geo\\Woob.obj");
 
 #pragma region Mesh
 Mesh::Mesh() { createTestShape(); }
@@ -22,9 +23,12 @@ void Mesh::setup() {
 
 	verts.push_back(glm::vec3(0, 0, 0));
 
-	cout << "Opening: " << ofToDataPath(path) << " ..." << endl;
+	cout << "Loading mesh " << ofToDataPath(path) << "..." << endl;
+	
 	ofBuffer buffer = ofBufferFromFile(ofToDataPath(path));
 
+	int vCount = 0;
+	int fCount = 0;
 	for (string line : buffer.getLines()) {
 
 		if (line.empty()) continue;
@@ -42,6 +46,8 @@ void Mesh::setup() {
 						catch (const std::exception e) {} 
 					}
 					verts.push_back(glm::vec3(v[0], v[1], v[2]));
+					vCount++;
+					cout << "\r" << string(50, ' ') << "\rLoaded vertices : " << vCount << flush;
 					break;
 				case 'f':
 					for (string face : split(line, ' ')) {
@@ -54,12 +60,27 @@ void Mesh::setup() {
 					// Works for any n-gon
 					for (int i = 0; i < f.size() - 2; i++) {
 						tris.push_back(glm::vec3(f[i], f[i + 1], f[i + 2]));
+						fCount++;
+						cout << "\r" << string(50, ' ') << "\rLoaded faces: " << fCount << flush;
 					}
 					break;
 				}
 			continue;
 		}
 	}
+	cout << "\r" << string(50, ' ') << "\r";
+	cout << "Finished loading model : " << ofToDataPath(path) << endl << flush;
+	cout << endl <<  "---STATS---" << endl;
+	cout << "Vertices: " << vCount << endl;
+	cout << "Triangles: " << fCount << endl;
+
+	// Vert count * 3 coords (x,y,z) * 4 bytes (float)
+	cout << "Vertex memory: " << (vCount * 3 * 4)/1024. << " kb" << endl; 
+
+	// Tri count * 3 indices (v1,v2,v3) * 4 bytes (int)
+	cout << "Triangle memory: " << (fCount * 3 * 4)/1024. << " kb" << endl; 
+
+	cout << "Total memory: " << ((vCount * 3 * 4) / 1024. + (fCount * 3 * 4) / 1000.) << " kb" << endl;
 }
 
 void Mesh::createTestShape() {
@@ -97,6 +118,10 @@ void ofApp::setup(){
 
 	// Mesh
 	mesh.setup();
+
+	// GUI
+	gui.setup();
+	//gui.add(text.setup())
 }
 
 //--------------------------------------------------------------

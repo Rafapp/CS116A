@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ofMain.h"
+#include "ofxGui.h"
 #include <iostream>
 using namespace std;
 
@@ -52,5 +53,7 @@ class ofApp : public ofBaseApp{
 
 		// Objects
 		ofEasyCam cam;
+		ofxPanel gui;
+		ofxTextField text;
 };
 
