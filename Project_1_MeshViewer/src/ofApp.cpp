@@ -1,7 +1,7 @@
 #include "ofApp.h"
 
 
-Mesh mesh("geo\\Cube.obj");
+Mesh mesh("geo\\Woob.obj");
 
 #pragma region Mesh
 Mesh::Mesh() { createTestShape(); }
@@ -114,24 +114,23 @@ void Mesh::drawSelected(vector<glm::vec3> tris) {
 	ofSetColor(ofColor::green);
 	ofFill();
 	for (glm::vec3 tri : tris) {
-		cout << tri << endl;
 		ofDrawTriangle(verts[tri.x], verts[tri.y], verts[tri.z]);
 	}
 }
 
 void Mesh::drawAdjacentTriangles() {
 	// Select adjacent tris to face
-	cout << selectedType << endl;
 	if (selectedType == 'f') {
 
 		if (selectedIndex > triCount) return;
 
 		vector<glm::vec3> temp;
-		/*for (int i = -2; i < 3; i++) {
-			temp.push_back(tris[selectedIndex +i]);
-		}*/
-		temp.push_back(tris[selectedIndex]);
-		temp.push_back(tris[selectedIndex - 1]);
+		glm::vec3 triIndexes = tris[selectedIndex];
+		for (glm::vec3 tri : tris) {
+			if (tri.x == triIndexes.x || tri.y == triIndexes.y || tri.z == triIndexes.z) {
+				temp.push_back(tri);
+			}
+		}
 		mesh.drawSelected(temp);
 	}
 
