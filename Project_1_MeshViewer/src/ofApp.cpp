@@ -1,7 +1,7 @@
 #include "ofApp.h"
 
 
-Mesh mesh("geo\\Woob.obj");
+Mesh mesh("geo\\Cube.obj");
 
 #pragma region Mesh
 Mesh::Mesh() { createTestShape(); }
@@ -75,12 +75,12 @@ void Mesh::setup() {
 	cout << "Triangles: " << fCount << endl;
 
 	// Vert count * 3 coords (x,y,z) * 4 bytes (float)
-	cout << "Vertex memory: " << (vCount * 3 * 4)/1024. << " kb" << endl; 
+	cout << "Vertex memory: " << (vCount * 3 * 4)/1000. << " kb" << endl; 
 
 	// Tri count * 3 indices (v1,v2,v3) * 4 bytes (int)
-	cout << "Triangle memory: " << (fCount * 3 * 4)/1024. << " kb" << endl; 
+	cout << "Triangle memory: " << (fCount * 3 * 4)/1000. << " kb" << endl; 
 
-	cout << "Total memory: " << ((vCount * 3 * 4) / 1024. + (fCount * 3 * 4) / 1000.) << " kb" << endl;
+	cout << "Total memory: " << ((vCount * 3 * 4) / 1000. + (fCount * 3 * 4) / 1000.) << " kb" << endl;
 
 	vertCount = vCount; 
 	triCount = fCount;
