@@ -58,11 +58,12 @@ void Mesh::setup() {
                         catch (const std::exception e) {}
                     }
                     // Works for any n-gon
-                    for (int i = 0; i < f.size() - 2; i++) {
-                        tris.push_back(glm::vec3(f[i], f[i + 1], f[i + 2]));
+//                    for (int i = 0; i < f.size() - 2; i++) {
+                        tris.push_back(glm::vec3(f[0], f[1], f[2]));
+                        tris.push_back(glm::vec3(f[0], f[2], f[3]));
                         fCount++;
-                        cout << "\r" << string(50, ' ') << "\rLoaded faces: " << fCount << flush;
-                    }
+//                        cout << "\r" << string(50, ' ') << "\rLoaded faces: " << fCount << flush;
+//                    }
                     break;
                 }
             continue;
@@ -133,9 +134,18 @@ void Mesh::drawAdjacentTriangles() {
         vector<glm::vec3> temp;
         glm::vec3 triIndexes = tris[selectedIndex];
         for (glm::vec3 tri : tris) {
-            if (tri.x == triIndexes.x || tri.y == triIndexes.y || tri.z == triIndexes.z) {
-                temp.push_back(tri);
+            int contained = 0;
+            for(int i = 0; i < 3; i++){
+                if(triIndexes.x == tri[i] || triIndexes.y == tri[i] || triIndexes.z == tri[i]) contained ++;
+                if(contained >= 2){
+                    temp.push_back(tri);
+                    cout << "BREAK: " << contained << endl;
+                    break;
+                }
             }
+//            if ((tri.x == triIndexes.x && tri.y == triIndexes.y) || (tri.y == triIndexes.y && tri.z == triIndexes.z) || (tri.z == triIndexes.z && tri.x == triIndexes.x)) {
+//                temp.push_back(tri);
+//            }
         }
         mesh.drawSelected(temp);
     }
