@@ -24,6 +24,7 @@ class ofApp : public ofBaseApp{
         void dragEvent(ofDragInfo dragInfo);
         void gotMessage(ofMessage msg);
         void drawAxis();
+        void calculateRayIntersection(int x, int y);
         
         ofEasyCam easyCam;
         ofCamera sideCam;
@@ -31,6 +32,12 @@ class ofApp : public ofBaseApp{
 
         ofCamera *theCam;
         
-
+        vector<glm::vec3> testTriangle;
+        bool bDrawMouseRay = false;
+        glm::vec3 mouseRayOrigin;
+        glm::vec3 mouseRayDir;
+        glm::vec2 baryV2;
+        glm::vec3 baryV3;
+        glm::vec3 worldIntersectionCoords;
 
 };

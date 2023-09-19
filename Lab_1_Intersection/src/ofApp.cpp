@@ -5,6 +5,8 @@ void ofApp::setup(){
     ofSetBackgroundColor(ofColor::black);
     theCam = &easyCam;
 
+    // camera.screenToWorld(mouse point) -> vec3 point
+    // normalize q - p
     // setup cameras
     //
     easyCam.setDistance(20);
@@ -17,7 +19,10 @@ void ofApp::setup(){
     topCam.setPosition(glm::vec3(0, 50, 0));
     topCam.lookAt(glm::vec3(0, 0, 0));
     topCam.setNearClip(.1);
-
+    
+    testTriangle.push_back(glm::vec3(7,10,3));
+    testTriangle.push_back(glm::vec3(5,23,5));
+    testTriangle.push_back(glm::vec3(15,10,-5));
 }
 
 //--------------------------------------------------------------
@@ -38,6 +43,17 @@ void ofApp::draw(){
     ofRotateDeg(90);
     ofDrawGridPlane();
     ofPopMatrix();
+    
+    // Draw mouse ray
+    
+    if(bDrawMouseRay){
+        ofSetColor(ofColor::white);
+        ofDrawLine(mouseRayOrigin, mouseRayOrigin + mouseRayDir * 60);
+        ofSetColor(ofColor::blue);
+        ofDrawSphere(worldIntersectionCoords, .5);
+    }
+    ofSetColor(ofColor::white);
+    ofDrawTriangle(testTriangle[0], testTriangle[1], testTriangle[2]);
     
     // draw the easy cam
     //
@@ -71,6 +87,10 @@ void ofApp::keyPressed(int key){
     case OF_KEY_F3:
         theCam = &topCam;
         break;
+    case 'c':
+        if(easyCam.getMouseInputEnabled())easyCam.disableMouseInput();
+        else easyCam.enableMouseInput();
+        break;
     default:
         break;
     }
@@ -88,17 +108,34 @@ void ofApp::mouseMoved(int x, int y ){
 
 //--------------------------------------------------------------
 void ofApp::mouseDragged(int x, int y, int button){
-
+    calculateRayIntersection(x, y);
 }
 
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button){
+    calculateRayIntersection(x, y);
+}
+
+void ofApp::calculateRayIntersection(int x, int y){
+    // Mouse ray
+    glm::vec3 d = theCam->screenToWorld(glm::vec3(x, y, 0));
+    glm::vec3 o = theCam->getPosition();
+    glm::vec3 nd = glm::normalize(d - o);
     
+    mouseRayOrigin = o;
+    mouseRayDir = nd;
+    
+    float t;
+    if(glm::intersectRayTriangle(o, nd, testTriangle[0], testTriangle[1], testTriangle[2], baryV2, t)) bDrawMouseRay = true;
+    else bDrawMouseRay = false;
+    
+    baryV3 = glm::vec3(1.0 - baryV2.x - baryV2.y, baryV2.x, baryV2.y);
+    worldIntersectionCoords = baryV3.x * testTriangle[0] + baryV3.y * testTriangle[1] + baryV3.z * testTriangle[2];
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseReleased(int x, int y, int button){
-
+    bDrawMouseRay = false;
 }
 
 //--------------------------------------------------------------
