@@ -1,7 +1,7 @@
 #include "ofApp.h"
 
 //--------------------------------------------------------------
-void ofApp::setup() {
+void ofApp::setup(){
     ofSetBackgroundColor(ofColor::black);
     theCam = &easyCam;
 
@@ -19,23 +19,23 @@ void ofApp::setup() {
     topCam.setPosition(glm::vec3(0, 50, 0));
     topCam.lookAt(glm::vec3(0, 0, 0));
     topCam.setNearClip(.1);
-
-    testTriangle.push_back(glm::vec3(7, 10, 3));
-    testTriangle.push_back(glm::vec3(5, 23, 5));
-    testTriangle.push_back(glm::vec3(15, 10, -5));
+    
+    testTriangle.push_back(glm::vec3(7,10,3));
+    testTriangle.push_back(glm::vec3(5,23,5));
+    testTriangle.push_back(glm::vec3(15,10,-5));
 }
 
 //--------------------------------------------------------------
-void ofApp::update() {
+void ofApp::update(){
 
 }
 
 //--------------------------------------------------------------
-void ofApp::draw() {
+void ofApp::draw(){
     theCam->begin();
     drawAxis();
     ofNoFill();
-
+    
     // draw Grid
     //
     ofPushMatrix();
@@ -43,10 +43,10 @@ void ofApp::draw() {
     ofRotateDeg(90);
     ofDrawGridPlane();
     ofPopMatrix();
-
+    
     // Draw mouse ray
-
-    if (bDrawMouseRay) {
+    
+    if(bDrawMouseRay){
         ofSetColor(ofColor::white);
         ofDrawLine(mouseRayOrigin, mouseRayOrigin + mouseRayDir * 60);
         ofSetColor(ofColor::blue);
@@ -54,7 +54,7 @@ void ofApp::draw() {
     }
     ofSetColor(ofColor::white);
     ofDrawTriangle(testTriangle[0], testTriangle[1], testTriangle[2]);
-
+    
     // draw the easy cam
     //
     easyCam.draw();
@@ -76,7 +76,7 @@ void ofApp::drawAxis() {
 }
 
 //--------------------------------------------------------------
-void ofApp::keyPressed(int key) {
+void ofApp::keyPressed(int key){
     switch (key) {
     case OF_KEY_F1:
         theCam = &easyCam;
@@ -88,7 +88,7 @@ void ofApp::keyPressed(int key) {
         theCam = &topCam;
         break;
     case 'c':
-        if (easyCam.getMouseInputEnabled())easyCam.disableMouseInput();
+        if(easyCam.getMouseInputEnabled())easyCam.disableMouseInput();
         else easyCam.enableMouseInput();
         break;
     default:
@@ -97,74 +97,68 @@ void ofApp::keyPressed(int key) {
 }
 
 //--------------------------------------------------------------
-void ofApp::keyReleased(int key) {
+void ofApp::keyReleased(int key){
 
 }
 
 //--------------------------------------------------------------
-void ofApp::mouseMoved(int x, int y) {
+void ofApp::mouseMoved(int x, int y ){
 
 }
 
 //--------------------------------------------------------------
-void ofApp::mouseDragged(int x, int y, int button) {
+void ofApp::mouseDragged(int x, int y, int button){
     calculateRayIntersection(x, y);
 }
 
 //--------------------------------------------------------------
-void ofApp::mousePressed(int x, int y, int button) {
+void ofApp::mousePressed(int x, int y, int button){
     calculateRayIntersection(x, y);
 }
 
-void ofApp::calculateRayIntersection(int x, int y) {
+void ofApp::calculateRayIntersection(int x, int y){
     // Mouse ray
     glm::vec3 d = theCam->screenToWorld(glm::vec3(x, y, 0));
     glm::vec3 o = theCam->getPosition();
     glm::vec3 nd = glm::normalize(d - o);
-
+    
     mouseRayOrigin = o;
     mouseRayDir = nd;
-
-    float t;
-    if (glm::intersectRayTriangle(o, nd, testTriangle[0], testTriangle[1], testTriangle[2], baryV2, t)) { 
-        baryV3 = glm::vec3(1.0 - baryV2.x - baryV2.y, baryV2.x, baryV2.y);
-        worldIntersectionCoords = baryV3.x * testTriangle[0] + baryV3.y * testTriangle[1] + baryV3.z * testTriangle[2];
-        
-        cout << "Barycentric intersection at: " << baryV3 << endl;
-
-        bDrawMouseRay = true;
-    }
-    else bDrawMouseRay = false;
-
     
+    float t;
+    if(glm::intersectRayTriangle(o, nd, testTriangle[0], testTriangle[1], testTriangle[2], baryV2, t)) bDrawMouseRay = true;
+    else bDrawMouseRay = false;
+    
+    baryV3 = glm::vec3(1.0 - baryV2.x - baryV2.y, baryV2.x, baryV2.y);
+    worldIntersectionCoords = baryV3.x * testTriangle[0] + baryV3.y * testTriangle[1] + baryV3.z * testTriangle[2];
 }
 
 //--------------------------------------------------------------
-void ofApp::mouseReleased(int x, int y, int button) {
+void ofApp::mouseReleased(int x, int y, int button){
     bDrawMouseRay = false;
 }
 
 //--------------------------------------------------------------
-void ofApp::mouseEntered(int x, int y) {
+void ofApp::mouseEntered(int x, int y){
 
 }
 
 //--------------------------------------------------------------
-void ofApp::mouseExited(int x, int y) {
+void ofApp::mouseExited(int x, int y){
 
 }
 
 //--------------------------------------------------------------
-void ofApp::windowResized(int w, int h) {
+void ofApp::windowResized(int w, int h){
 
 }
 
 //--------------------------------------------------------------
-void ofApp::gotMessage(ofMessage msg) {
+void ofApp::gotMessage(ofMessage msg){
 
 }
 
 //--------------------------------------------------------------
-void ofApp::dragEvent(ofDragInfo dragInfo) {
+void ofApp::dragEvent(ofDragInfo dragInfo){
 
 }
