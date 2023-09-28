@@ -87,6 +87,11 @@ void ofApp::dragEvent(ofDragInfo dragInfo){
 #pragma endregion
 
 #pragma region RayTracing
+void Render(){}
+void RayTrace(){
+    
+}
+
 void Ray::draw() {
 	ofDrawLine(o, o + (t * d));
 }
