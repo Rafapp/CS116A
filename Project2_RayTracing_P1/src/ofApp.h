@@ -2,6 +2,40 @@
 
 #include "ofMain.h"
 
+#pragma region Raytracing
+class SceneObject {
+public:
+	SceneObject(glm::vec3 p, ofColor diffuseColor, ofColor specularColor)
+		: p(p), diffuseColor(diffuseColor), specularColor(specularColor) {};
+
+	glm::vec3 p = glm::vec3(0, 0, 0);
+	ofColor diffuseColor, specularColor;
+	virtual void draw() = 0;
+	virtual void intersect() = 0;
+};
+
+class Sphere : public SceneObject {
+public:
+	Sphere(glm::vec3 p, float r, ofColor diffuseColor, ofColor specularColor)
+		: SceneObject(p, diffuseColor, specularColor), r(r) {
+	}
+	void draw();
+	void intersect();
+	float r;
+};
+
+class Ray {
+public:
+	float t;
+	glm::vec3 o, d;
+	Ray(glm::vec3 o, glm::vec3 d) : o(o), d(d), t(0.0) {}
+	glm::vec3 getWorldPoint();
+	void draw();
+
+};
+#pragma endregion
+
+#pragma region OF
 class ofApp : public ofBaseApp{
 	public:
 		#pragma region OF
@@ -22,40 +56,6 @@ class ofApp : public ofBaseApp{
 		void gotMessage(ofMessage msg);
 		#pragma endregion
 		ofEasyCam camera;
-		vector<SceneObject> sceneObjects;
+		vector<SceneObject*> sceneObjects;
 };
-
-class SceneObject{
-	public:
-		glm::vec3 position = glm::vec3(0,0,0);
-		ofColor specularColor;
-		ofColor diffuseColor;
-		virtual void draw();
-		virtual void intersect();
-};
-
-class Sphere : SceneObject {
-	public:
-		Sphere() {}
-		float r;
-
-};
-
-class Ray {
-	public:
-		float t;
-		glm::vec3 o, d;
-
-		Ray(glm::vec3 o, glm::vec3 d) {
-			this->o = o;
-			this->d = d;
-		}
-
-		glm::vec3 getWorldPoint() { 
-			return o + (t * d); 
-		}
-
-		void draw() {
-			ofDrawLine(o, o + (t * d));
-		}
-};
+#pragma endregion
