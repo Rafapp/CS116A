@@ -2,6 +2,9 @@
 
 #include "ofMain.h"
 
+#define RENDER_WIDTH 1280
+#define RENDER_HEIGHT 720
+
 #pragma region Raytracing
 class SceneObject {
 public:
@@ -33,12 +36,23 @@ public:
 	void draw();
 
 };
+
+class RayTracer : ofBaseApp {
+public:
+	ofEasyCam camera;
+	ofImage out;
+
+	vector<SceneObject*> sceneObjects;
+
+	virtual void Render();
+	virtual void Raytrace();
+	virtual void ProgressiveRender();
+};
 #pragma endregion
 
 #pragma region OF
 class ofApp : public ofBaseApp{
 	public:
-		#pragma region OF
 		void setup();
 		void update();
 		void draw();
@@ -54,8 +68,10 @@ class ofApp : public ofBaseApp{
 		void windowResized(int w, int h);
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
-		#pragma endregion
-		ofEasyCam camera;
-		vector<SceneObject*> sceneObjects;
+
+		ofCamera camera;
+		bool interacting = false;
 };
 #pragma endregion
+
+
