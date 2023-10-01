@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ofMain.h"
+#include "ofxGui.h"
 
 #define RENDER_WIDTH 1280
 #define RENDER_HEIGHT 720
@@ -39,11 +40,11 @@ public:
 
 class RayTracer : ofBaseApp {
 public:
-	ofEasyCam camera;
+	ofEasyCam renderCam;
 	ofImage out;
 
 	vector<SceneObject*> sceneObjects;
-
+    
 	virtual void Render();
 	virtual void Raytrace();
 	virtual void ProgressiveRender();
@@ -69,8 +70,19 @@ class ofApp : public ofBaseApp{
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
 
-		ofCamera camera;
 		bool interacting = false;
+    
+        ofEasyCam previewCam;
+    
+        ofxPanel gui;
+        ofxLabel l_title;
+        ofxLabel l_save;
+        ofxToggle t_pRendering;
+        ofxButton b_setCamera;
+        ofxButton b_raytrace;
+        ofxButton b_save;
+        
+        bool showGui;
 };
 #pragma endregion
 
