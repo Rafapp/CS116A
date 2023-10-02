@@ -18,8 +18,8 @@ void ofApp::setup(){
     gui.setup();
     gui.add(l_title.setup("", "RAYTRACER:By@Rafagamedev"));
     gui.add(t_pRendering.setup("Progressive rendering", false));
-    gui.add(b_setCamera.setup("Set render to viewport"));
-    gui.add(b_raytrace.setup("Raytrace image"));
+    gui.add(b_setCamera.setup("Set render cam to view"));
+    gui.add(b_render.setup("Render image"));
     gui.add(b_save.setup("Save image ..."));
     gui.add(l_save.setup("", ""));
 
@@ -37,16 +37,24 @@ void ofApp::setup(){
 }
 
 //--------------------------------------------------------------
-glm::vec3 prevView;
+glm::vec3 prevPos;
 void ofApp::update(){
-    if(t_pRendering){
-        glm::vec3 view = previewCam.getPosition();
-        if(prevView != view){
-            interacting = true;
-            prevView = view;
-        } else interacting = false;
+
+	// Check if interacting with camera
+    if(t_pRendering || b_render){
+        /*glm::vec3 pos = previewCam.getPosition();
+        if(prevPos != pos){
+            bInteracting = true;
+			rt.bShowImage = false;
+            prevPos = pos;
+        } else bInteracting = false;*/
     }
-    cout << interacting << endl;
+
+	// Render image 
+	if (b_render || t_pRendering) {
+		if (!rt.bShowImage) rt.bShowImage = true;
+	}
+	else if (rt.bShowImage) rt.bShowImage = false;
     
     // Save message
     if(b_save) l_save = "Image saved";
@@ -65,10 +73,13 @@ void ofApp::draw(){
 		object->draw();
 	}
 	previewCam.end();
-    
-	// Drawing rendered image
-	//ofSetColor(255);
-	//rt.out.draw(0,0);
+
+	// Display images in viweport
+	if (rt.bShowImage) {
+		ofSetColor(255);
+		rt.out.draw(0, 0); 
+	}
+	
     
     // Draw GUI
     gui.draw();
@@ -142,7 +153,7 @@ void RayTracer::Render(){
 }
 
 void RayTracer::ProgressiveRender() {
-    
+
 }
 
 void RayTracer::Raytrace(){

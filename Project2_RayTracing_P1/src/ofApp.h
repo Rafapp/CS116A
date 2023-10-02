@@ -44,6 +44,9 @@ public:
 	ofImage out;
 
 	vector<SceneObject*> sceneObjects;
+
+	bool bShowImage;
+	bool bIsRendering;
     
 	virtual void Render();
 	virtual void Raytrace();
@@ -70,7 +73,7 @@ class ofApp : public ofBaseApp{
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
 
-		bool interacting = false;
+		bool bInteracting = false;
     
         ofEasyCam previewCam;
     
@@ -79,7 +82,7 @@ class ofApp : public ofBaseApp{
         ofxLabel l_save;
         ofxToggle t_pRendering;
         ofxButton b_setCamera;
-        ofxButton b_raytrace;
+        ofxButton b_render;
         ofxButton b_save;
         
         bool showGui;
