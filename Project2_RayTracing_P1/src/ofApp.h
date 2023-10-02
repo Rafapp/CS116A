@@ -46,10 +46,10 @@ public:
 	vector<SceneObject*> sceneObjects;
 
 	bool bShowImage;
-	bool bIsRendering;
+	bool bRendered;
     
 	virtual void Render();
-	virtual void Raytrace();
+	virtual ofColor Raytrace(glm::vec3 o, int x, int y);
 	virtual void ProgressiveRender();
 };
 #pragma endregion
@@ -74,6 +74,7 @@ class ofApp : public ofBaseApp{
 		void gotMessage(ofMessage msg);
 
 		bool bInteracting = false;
+		bool bMouseButton = false;
     
         ofEasyCam previewCam;
     
@@ -84,8 +85,6 @@ class ofApp : public ofBaseApp{
         ofxButton b_setCamera;
         ofxButton b_render;
         ofxButton b_save;
-        
-        bool showGui;
 };
 #pragma endregion
 

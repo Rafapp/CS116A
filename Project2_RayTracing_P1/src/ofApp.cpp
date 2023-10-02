@@ -32,8 +32,7 @@ void ofApp::setup(){
 	rt.sceneObjects.push_back(new Sphere(glm::vec3(-5, 0.5, 0), 1, ofColor::blue, ofColor::blue));
 
 	// Raytraced image
-	rt.out.allocate(RENDER_WIDTH, RENDER_HEIGHT, OF_IMAGE_COLOR);
-	rt.Render();
+	
 }
 
 //--------------------------------------------------------------
@@ -41,20 +40,26 @@ glm::vec3 prevPos;
 void ofApp::update(){
 
 	// Check if interacting with camera
-    if(t_pRendering || b_render){
-        /*glm::vec3 pos = previewCam.getPosition();
-        if(prevPos != pos){
-            bInteracting = true;
-			rt.bShowImage = false;
-            prevPos = pos;
-        } else bInteracting = false;*/
-    }
+    glm::vec3 pos = previewCam.getPosition();
+    if(prevPos != pos){
+		rt.bShowImage = false;
+        bInteracting = true;
+        prevPos = pos;
+    } else bInteracting = false;
 
-	// Render image 
-	if (b_render || t_pRendering) {
-		if (!rt.bShowImage) rt.bShowImage = true;
+	// Render and display image
+	if (b_render && !rt.bShowImage) {
+		rt.bRendered = false;
+		rt.Render();
+		rt.bShowImage = true;
+	} 
+
+	// Progressively render, and display image
+	if (t_pRendering && !bInteracting && bMouseButton == false && !rt.bShowImage) {
+		rt.bRendered = false;
+		rt.ProgressiveRender();
+		rt.bShowImage = true;
 	}
-	else if (rt.bShowImage) rt.bShowImage = false;
     
     // Save message
     if(b_save) l_save = "Image saved";
@@ -107,12 +112,12 @@ void ofApp::mouseDragged(int x, int y, int button){
 
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button){
-
+	bMouseButton = true;
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseReleased(int x, int y, int button){
-    
+	bMouseButton = false;
 }
 
 //--------------------------------------------------------------
@@ -142,25 +147,33 @@ void ofApp::dragEvent(ofDragInfo dragInfo){
 #pragma endregion
 
 #pragma region RayTracing
+// Generates the final image pixel by pixel
 void RayTracer::Render(){
+	if (rt.bRendered) return;
+	rt.out.allocate(RENDER_WIDTH, RENDER_HEIGHT, OF_IMAGE_COLOR);
+
 	for (int x = 0; x < RENDER_WIDTH; x++) {
 		for (int y = 0; y < RENDER_HEIGHT; y++) {
-			if(x%2 == 0)
 			out.setColor(x, y, ofColor::red);
 		}
 	}
+
 	rt.out.update();
+	rt.bRendered = true;
 }
 
+// Generates a temporary image via a sampling algorithm
 void RayTracer::ProgressiveRender() {
 
 }
 
-void RayTracer::Raytrace(){
-    
+// Traces a ray given at a screen -> world coordinate, finds object intersections, returns a color
+ofColor RayTracer::Raytrace(glm::vec3 o, int x, int y){
+	//glm::vec3 d = rt.renderCam.cameraToWorld(x, y);
 }
 
 bool IntersectLineSphere(Ray ray, Sphere* s) {
+	
 	return false;
 }
 void Ray::draw() {
