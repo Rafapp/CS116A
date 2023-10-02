@@ -7,6 +7,16 @@
 #define RENDER_HEIGHT 720
 
 #pragma region Raytracing
+class Ray {
+public:
+	float t;
+	glm::vec3 o, d;
+	Ray(glm::vec3 o, glm::vec3 d) : o(o), d(d), t(0.0) {}
+
+	glm::vec3 getWorldPoint();
+	void draw();
+};
+
 class SceneObject {
 public:
 	SceneObject(glm::vec3 p, ofColor diffuseColor, ofColor specularColor)
@@ -15,7 +25,7 @@ public:
 	glm::vec3 p = glm::vec3(0, 0, 0);
 	ofColor diffuseColor, specularColor;
 	virtual void draw() = 0;
-	virtual void intersect() = 0;
+	virtual bool intersect(Ray r) = 0;
 };
 
 class Sphere : public SceneObject {
@@ -24,23 +34,42 @@ public:
 		: SceneObject(p, diffuseColor, specularColor), r(r) {
 	}
 	void draw();
-	void intersect();
+	bool intersect(Ray r);
 	float r;
 };
 
-class Ray {
+class Plane : public SceneObject {
 public:
-	float t;
-	glm::vec3 o, d;
-	Ray(glm::vec3 o, glm::vec3 d) : o(o), d(d), t(0.0) {}
-	glm::vec3 getWorldPoint();
+	Plane(glm::vec3 p, glm::vec3 n, float w, float h, ofColor diffuseColor, ofColor specularColor)
+		: SceneObject(p, diffuseColor, specularColor), n(n), w(w), h(h)  {
+	}
 	void draw();
+	bool intersect(Ray r);
 
+	ofPlanePrimitive plane;
+	glm::vec3 n;
+	float w;
+	float h;
+};
+
+class ViewPlane : ofBaseApp{
+public:
+	void draw();
+	void update(); // Update the view plane to make it match the render camera's
+	glm::vec3 PlaneToWorld(int u, int v);
+
+	ofPlanePrimitive plane;
+	glm::vec3 p = glm::vec3(0,0,0);
+
+	float w = RENDER_WIDTH / 100.;
+	float h = RENDER_HEIGHT / 100.;
 };
 
 class RayTracer : ofBaseApp {
 public:
 	ofEasyCam renderCam;
+
+	ViewPlane viewPlane;
 	ofImage out;
 
 	vector<SceneObject*> sceneObjects;
@@ -76,15 +105,19 @@ class ofApp : public ofBaseApp{
 		bool bInteracting = false;
 		bool bMouseButton = false;
     
-        ofEasyCam previewCam;
-    
         ofxPanel gui;
         ofxLabel l_title;
-        ofxLabel l_save;
+
+		ofxLabel l_rendering;
         ofxToggle t_pRendering;
+		ofxButton b_render;
+
+		ofxLabel l_controls;
+		ofxToggle t_renderPlane;
         ofxButton b_setCamera;
-        ofxButton b_render;
+
         ofxButton b_save;
+		ofxLabel l_save;
 };
 #pragma endregion
 

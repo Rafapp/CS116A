@@ -1,6 +1,5 @@
 #include "ofApp.h"
 #include <glm/gtx/intersect.hpp>
-#include <glm/gtc/epsilon.hpp>
 
 // Global vars
 RayTracer rt;
@@ -17,21 +16,27 @@ void ofApp::setup(){
     // GUI
     gui.setup();
     gui.add(l_title.setup("", "RAYTRACER:By@Rafagamedev"));
+
+	gui.add(l_rendering.setup("", "Rendering"));
     gui.add(t_pRendering.setup("Progressive rendering", false));
-    gui.add(b_setCamera.setup("Set render cam to view"));
-    gui.add(b_render.setup("Render image"));
+	gui.add(b_render.setup("Render image"));
+
+	gui.add(l_controls.setup("", "Controls"));
+    gui.add(b_setCamera.setup("Align render to view"));
+	gui.add(t_renderPlane.setup("Show render plane", false));
     gui.add(b_save.setup("Save image ..."));
     gui.add(l_save.setup("", ""));
 
-	// Scene objects
-	previewCam.setPosition(glm::vec3(-20,0,0));
-	previewCam.lookAt(glm::vec3(0,0,0));
+	// Preview cam
+	rt.renderCam.setPosition(glm::vec3(-20,0,0));
+	rt.renderCam.lookAt(glm::vec3(0,0,0));
     
+	// Scene objects
+	rt.sceneObjects.push_back(new Plane(glm::vec3(0, -5, 0), glm::vec3(0, 1, 0), 20, 20, ofColor::lightGray, ofColor::lightGray));
+
 	rt.sceneObjects.push_back(new Sphere(glm::vec3(0, 0, .5),1, ofColor::red, ofColor::red));
 	rt.sceneObjects.push_back(new Sphere(glm::vec3(-2.5, 0, -0.5), 1, ofColor::green, ofColor::green));
 	rt.sceneObjects.push_back(new Sphere(glm::vec3(-5, 0.5, 0), 1, ofColor::blue, ofColor::blue));
-
-	// Raytraced image
 	
 }
 
@@ -40,7 +45,7 @@ glm::vec3 prevPos;
 void ofApp::update(){
 
 	// Check if interacting with camera
-    glm::vec3 pos = previewCam.getPosition();
+    glm::vec3 pos = rt.renderCam.getPosition();
     if(prevPos != pos){
 		rt.bShowImage = false;
         bInteracting = true;
@@ -60,6 +65,11 @@ void ofApp::update(){
 		rt.ProgressiveRender();
 		rt.bShowImage = true;
 	}
+
+	// Update the view plane position to the frustum's near plane
+	if (b_setCamera) {
+		rt.viewPlane.update();
+	}
     
     // Save message
     if(b_save) l_save = "Image saved";
@@ -69,24 +79,25 @@ void ofApp::update(){
 //--------------------------------------------------------------
 void ofApp::draw(){
 
-	previewCam.begin();
+	rt.renderCam.begin();
     ofSetColor(ofColor::white);
-
+	
     // Draw objects (OF preview)
 	ofDrawGrid();
 	for (SceneObject* object : rt.sceneObjects) {
 		object->draw();
 	}
-	previewCam.end();
+
+	if(t_renderPlane) rt.viewPlane.draw();
+
+	rt.renderCam.end();
 
 	// Display images in viweport
 	if (rt.bShowImage) {
 		ofSetColor(255);
 		rt.out.draw(0, 0); 
 	}
-	
-    
-    // Draw GUI
+
     gui.draw();
 }
 
@@ -150,6 +161,7 @@ void ofApp::dragEvent(ofDragInfo dragInfo){
 // Generates the final image pixel by pixel
 void RayTracer::Render(){
 	if (rt.bRendered) return;
+	float t0 = ofGetElapsedTimef();
 	rt.out.allocate(RENDER_WIDTH, RENDER_HEIGHT, OF_IMAGE_COLOR);
 
 	for (int x = 0; x < RENDER_WIDTH; x++) {
@@ -160,6 +172,7 @@ void RayTracer::Render(){
 
 	rt.out.update();
 	rt.bRendered = true;
+	cout << "Render complete in:" << ofGetElapsedTimef() - t0 << " s" << endl;
 }
 
 // Generates a temporary image via a sampling algorithm
@@ -168,14 +181,33 @@ void RayTracer::ProgressiveRender() {
 }
 
 // Traces a ray given at a screen -> world coordinate, finds object intersections, returns a color
-ofColor RayTracer::Raytrace(glm::vec3 o, int x, int y){
-	//glm::vec3 d = rt.renderCam.cameraToWorld(x, y);
+ofColor RayTracer::Raytrace(glm::vec3 o, int u, int v){
+	glm::vec3 d = rt.viewPlane.PlaneToWorld(u, v);
+	return ofColor::black;
 }
 
-bool IntersectLineSphere(Ray ray, Sphere* s) {
-	
-	return false;
+// Draw the view plane for debugging
+void ViewPlane::draw() {
+	ofNoFill();
+	ofSetColor(ofColor::green);
+	plane.setPosition(p);
+	plane.setWidth(w);
+	plane.setHeight(h);
+	plane.setResolution(2, 2);
+	plane.drawWireframe();
 }
+
+// Position and align view plane with camera frustum's near plane
+void ViewPlane::update(){
+	rt.viewPlane.p = rt.renderCam.getPosition() + rt.renderCam.getLookAtDir() * rt.renderCam.getNearClip();
+	rt.viewPlane.plane.setOrientation(rt.renderCam.getOrientationQuat());
+}
+
+// Convert from uv plane coordinates, to world
+glm::vec3 ViewPlane::PlaneToWorld(int u, int v) {
+	return glm::vec3(0);
+}
+
 void Ray::draw() {
 	ofDrawLine(o, o + (t * d));
 }
@@ -190,7 +222,26 @@ void Sphere::draw(){
 	ofDrawSphere(p, r);
 }
 
-void Sphere::intersect() {
+bool Sphere::intersect(Ray r) {
+	return false;
+}
 
+void Plane::draw() {
+	ofSetColor(diffuseColor);
+	ofFill();
+	plane.setPosition(p);
+	plane.setWidth(w);
+	plane.setHeight(h);
+	plane.setResolution(4, 4);
+
+	ofQuaternion rot;
+	rot.makeRotate(glm::vec3(0, 0, -1), n);
+	plane.setOrientation(rot);
+
+	plane.draw();
+}
+
+bool Plane::intersect(Ray r) {
+	return false;
 }
 #pragma endregion
