@@ -3,6 +3,7 @@
 
 // Global vars
 RayTracer rt;
+// To save: img.save("myPic.jpg");
 
 #pragma region Helper Functions
 #pragma endregion
