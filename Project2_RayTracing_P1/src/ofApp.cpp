@@ -165,9 +165,11 @@ void RayTracer::Render(){
 	float t0 = ofGetElapsedTimef();
 	rt.out.allocate(RENDER_WIDTH, RENDER_HEIGHT, OF_IMAGE_COLOR);
 
-	for (int x = 0; x < RENDER_WIDTH; x++) {
-		for (int y = 0; y < RENDER_HEIGHT; y++) {
-			out.setColor(x, y, ofColor::red);
+	glm::vec3 o = renderCam.getPosition();
+
+	for (int u = 0; u < RENDER_WIDTH; u++) {
+		for (int v = 0; v < RENDER_HEIGHT; v++) {
+			out.setColor(u, v, Raytrace(o, u, v));
 		}
 	}
 
@@ -181,10 +183,23 @@ void RayTracer::ProgressiveRender() {
 
 }
 
-// Traces a ray given at a screen -> world coordinate, finds object intersections, returns a color
+// Traces a ray given at a image -> world coordinate, finds object intersections, returns a pixel color
 ofColor RayTracer::Raytrace(glm::vec3 o, int u, int v){
 	glm::vec3 d = rt.viewPlane.PlaneToWorld(u, v);
+	glm::vec3 o = rt.renderCam.getPosition();
+	Ray* r = new Ray(o, d);
+
+	vector<SceneObject*> ordered;
+
+	for (SceneObject* s : sceneObjects) {
+		// Scan through scene objects that we hit, add them to the list
+	}
+		// Sort the objects by their t
+	// std::sort(ordered.begin(), ordered.end(), compareSceneObjects)
 	return ofColor::black;
+}
+bool compareSceneObjects(const SceneObject& obj1, const SceneObject& obj2) {
+	
 }
 
 // Draw the view plane for debugging
@@ -206,14 +221,23 @@ void ViewPlane::update(){
 
 // Convert from uv plane coordinates, to world
 glm::vec3 ViewPlane::PlaneToWorld(int u, int v) {
-	return glm::vec3(0);
+	int xImg = u - rt.viewPlane.w / 2; // Might need float
+	int yImg = v - rt.viewPlane.h / 2; // Might need float
+
+	int nearClip = rt.renderCam.getNearClip();
+	int fov = rt.renderCam.getFov();
+
+	int x = (xImg * nearClip) / fov;
+	int y = (yImg * nearClip) / fov;
+	int z = rt.renderCam.getX() + nearClip;
+	return glm::vec3(x, y, z);
 }
 
 void Ray::draw() {
 	ofDrawLine(o, o + (t * d));
 }
 
-glm::vec3 Ray::getWorldPoint() {
+glm::vec3 Ray::getWorldPoint(float t) {
 	return o + (t * d);
 }
 
@@ -223,8 +247,9 @@ void Sphere::draw(){
 	ofDrawSphere(p, r);
 }
 
-bool Sphere::intersect(Ray r) {
-	return false;
+bool Sphere::intersect(Ray ray, Sphere* s) {
+	float t;
+	return glm::intersectRaySphere(ray.o, ray.d, s->p, s->r * s->r, t);
 }
 
 void Plane::draw() {

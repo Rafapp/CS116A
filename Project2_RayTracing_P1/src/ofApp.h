@@ -9,23 +9,27 @@
 #pragma region Raytracing
 class Ray {
 public:
+	Ray(glm::vec3 o, glm::vec3 d) : o(o), d(d), t(0.0) {}
+	void draw();
+	glm::vec3 getWorldPoint(float t);
+
 	float t;
 	glm::vec3 o, d;
-	Ray(glm::vec3 o, glm::vec3 d) : o(o), d(d), t(0.0) {}
-
-	glm::vec3 getWorldPoint();
-	void draw();
 };
 
 class SceneObject {
 public:
+
+	// TODO: Add a t parameter here, so that we can set it
+	// on each raytrace, sort by distance, and then render the pixel
+
 	SceneObject(glm::vec3 p, ofColor diffuseColor, ofColor specularColor)
 		: p(p), diffuseColor(diffuseColor), specularColor(specularColor) {};
+	virtual void draw() = 0;
+	virtual bool intersect(Ray r) = 0;
 
 	glm::vec3 p = glm::vec3(0, 0, 0);
 	ofColor diffuseColor, specularColor;
-	virtual void draw() = 0;
-	virtual bool intersect(Ray r) = 0;
 };
 
 class Sphere : public SceneObject {
@@ -34,7 +38,7 @@ public:
 		: SceneObject(p, diffuseColor, specularColor), r(r) {
 	}
 	void draw();
-	bool intersect(Ray r);
+	bool intersect(Ray r, Sphere* s);
 	float r;
 };
 
