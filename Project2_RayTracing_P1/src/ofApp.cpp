@@ -162,13 +162,15 @@ void ofApp::dragEvent(ofDragInfo dragInfo){
 // Generates the final image pixel by pixel
 void RayTracer::Render(){
 	if (rt.bRendered) return;
+
 	float t0 = ofGetElapsedTimef();
+
 	rt.out.allocate(RENDER_WIDTH, RENDER_HEIGHT, OF_IMAGE_COLOR);
 
 	glm::vec3 o = renderCam.getPosition();
 
-	for (int u = 0; u < RENDER_WIDTH; u++) {
-		for (int v = 0; v < RENDER_HEIGHT; v++) {
+	for (int u = 0; u < RENDER_WIDTH - 1; u++) {
+		for (int v = 0; v < RENDER_HEIGHT - 1; v++) {
 			out.setColor(u, v, Raytrace(o, u, v));
 		}
 	}
@@ -180,26 +182,43 @@ void RayTracer::Render(){
 
 // Generates a temporary image via a sampling algorithm
 void RayTracer::ProgressiveRender() {
+	float t0 = ofGetElapsedTimef();
 
+	rt.out.allocate(RENDER_WIDTH, RENDER_HEIGHT, OF_IMAGE_COLOR);
+
+	rt.viewPlane.update();
+	glm::vec3 o = renderCam.getPosition();
+
+	for (int u = 0; u < RENDER_WIDTH - 1; u++) {
+		for (int v = 0; v < RENDER_HEIGHT - 1; v++) {
+			out.setColor(u, v, Raytrace(o, u, v));
+		}
+	}
+
+	rt.out.update();
+	rt.bRendered = true;
+	cout << "Render complete in:" << ofGetElapsedTimef() - t0 << " s" << endl;
 }
 
 // Traces a ray given at a image -> world coordinate, finds object intersections, returns a pixel color
 ofColor RayTracer::Raytrace(glm::vec3 o, int u, int v){
-	glm::vec3 d = rt.viewPlane.PlaneToWorld(u, v);
-	glm::vec3 o = rt.renderCam.getPosition();
+	glm::vec3 d = glm::normalize(rt.viewPlane.PlaneToWorld(u, v) - (o));
 	Ray* r = new Ray(o, d);
 
-	vector<SceneObject*> ordered;
+	float low = FLT_MAX;
+	SceneObject* nearest = nullptr;
 
 	for (SceneObject* s : sceneObjects) {
-		// Scan through scene objects that we hit, add them to the list
+		if (s->intersect(*r, s)) {
+			cout << "Intersect with: " << s << endl;
+			if (s->t < low) {
+				low = s->t;
+				nearest = s;
+			}
+		}
 	}
-		// Sort the objects by their t
-	// std::sort(ordered.begin(), ordered.end(), compareSceneObjects)
+	if (nearest) return nearest->diffuseColor;;
 	return ofColor::black;
-}
-bool compareSceneObjects(const SceneObject& obj1, const SceneObject& obj2) {
-	
 }
 
 // Draw the view plane for debugging
@@ -217,23 +236,29 @@ void ViewPlane::draw() {
 void ViewPlane::update(){
 	rt.viewPlane.p = rt.renderCam.getPosition() + rt.renderCam.getLookAtDir() * rt.renderCam.getNearClip();
 	rt.viewPlane.plane.setOrientation(rt.renderCam.getOrientationQuat());
+	rt.viewPlane.n = rt.renderCam.getLookAtDir();
 }
 
-// Convert from uv plane coordinates, to world
+// Convert from uv plane coordinates, to world coordinates using the translation and rotation matrix
 glm::vec3 ViewPlane::PlaneToWorld(int u, int v) {
-	int xImg = u - rt.viewPlane.w / 2; // Might need float
-	int yImg = v - rt.viewPlane.h / 2; // Might need float
+	float nu = u / RENDER_WIDTH;
+	float nv = v / RENDER_HEIGHT;
 
-	int nearClip = rt.renderCam.getNearClip();
-	int fov = rt.renderCam.getFov();
+	ofMatrix4x4 T;
+	T.makeTranslationMatrix(rt.viewPlane.p);
 
-	int x = (xImg * nearClip) / fov;
-	int y = (yImg * nearClip) / fov;
-	int z = rt.renderCam.getX() + nearClip;
-	return glm::vec3(x, y, z);
+	ofMatrix4x4 R;
+	R.makeRotationMatrix(rt.viewPlane.plane.getOrientationQuat());
+
+	ofMatrix4x4 transform = T * R;
+	ofVec4f uvw(nu, nv, 0, 1);
+	uvw = uvw * transform;
+
+	return glm::vec3(uvw.x, uvw.y, uvw.z);
 }
 
 void Ray::draw() {
+	ofSetColor(ofColor::white);
 	ofDrawLine(o, o + (t * d));
 }
 
@@ -247,9 +272,12 @@ void Sphere::draw(){
 	ofDrawSphere(p, r);
 }
 
-bool Sphere::intersect(Ray ray, Sphere* s) {
+bool Sphere::intersect(Ray ray, SceneObject* s){
 	float t;
-	return glm::intersectRaySphere(ray.o, ray.d, s->p, s->r * s->r, t);
+	Sphere* sphere = dynamic_cast<Sphere*>(s); // TODO: Fix this, it's terrible!
+	bool intersect = glm::intersectRaySphere(ray.o, ray.d, s->p, sphere->r * sphere->r, t);
+	s->t = t;
+	return intersect;
 }
 
 void Plane::draw() {
@@ -267,7 +295,7 @@ void Plane::draw() {
 	plane.draw();
 }
 
-bool Plane::intersect(Ray r) {
+bool Plane::intersect(Ray r, SceneObject* s) {
 	return false;
 }
 #pragma endregion

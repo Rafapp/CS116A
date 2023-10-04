@@ -3,13 +3,13 @@
 #include "ofMain.h"
 #include "ofxGui.h"
 
-#define RENDER_WIDTH 1280
-#define RENDER_HEIGHT 720
+#define RENDER_WIDTH 1280.0
+#define RENDER_HEIGHT 720.0
 
 #pragma region Raytracing
 class Ray {
 public:
-	Ray(glm::vec3 o, glm::vec3 d) : o(o), d(d), t(0.0) {}
+	Ray(glm::vec3 o, glm::vec3 d) : o(o), d(d), t(20) {}
 	void draw();
 	glm::vec3 getWorldPoint(float t);
 
@@ -26,8 +26,9 @@ public:
 	SceneObject(glm::vec3 p, ofColor diffuseColor, ofColor specularColor)
 		: p(p), diffuseColor(diffuseColor), specularColor(specularColor) {};
 	virtual void draw() = 0;
-	virtual bool intersect(Ray r) = 0;
+	virtual bool intersect(Ray r, SceneObject* s) = 0;
 
+	float t = FLT_MAX;
 	glm::vec3 p = glm::vec3(0, 0, 0);
 	ofColor diffuseColor, specularColor;
 };
@@ -38,7 +39,7 @@ public:
 		: SceneObject(p, diffuseColor, specularColor), r(r) {
 	}
 	void draw();
-	bool intersect(Ray r, Sphere* s);
+	bool intersect(Ray r, SceneObject* s);
 	float r;
 };
 
@@ -48,7 +49,7 @@ public:
 		: SceneObject(p, diffuseColor, specularColor), n(n), w(w), h(h)  {
 	}
 	void draw();
-	bool intersect(Ray r);
+	bool intersect(Ray r, SceneObject* s);
 
 	ofPlanePrimitive plane;
 	glm::vec3 n;
@@ -63,6 +64,7 @@ public:
 	glm::vec3 PlaneToWorld(int u, int v);
 
 	ofPlanePrimitive plane;
+	glm::vec3 n;
 	glm::vec3 p = glm::vec3(0,0,0);
 
 	float w = RENDER_WIDTH / 100.;
