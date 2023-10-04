@@ -10,6 +10,7 @@ RayTracer rt;
 
 #pragma region openFrameworks
 //--------------------------------------------------------------
+
 void ofApp::setup(){
 	// General setup
 	ofSetBackgroundColor(ofColor::black);
@@ -78,6 +79,8 @@ void ofApp::update(){
 }
 
 //--------------------------------------------------------------
+vector<Ray*> rays;
+
 void ofApp::draw(){
 
 	rt.renderCam.begin();
@@ -88,6 +91,9 @@ void ofApp::draw(){
 	for (SceneObject* object : rt.sceneObjects) {
 		object->draw();
 	}
+	/*for (Ray* r : rays) {
+		r->draw();
+	}*/
 
 	if(t_renderPlane) rt.viewPlane.draw();
 
@@ -159,9 +165,12 @@ void ofApp::dragEvent(ofDragInfo dragInfo){
 #pragma endregion
 
 #pragma region RayTracing
+
 // Generates the final image pixel by pixel
 void RayTracer::Render(){
 	if (rt.bRendered) return;
+
+	rt.viewPlane.update();
 
 	float t0 = ofGetElapsedTimef();
 
@@ -202,15 +211,15 @@ void RayTracer::ProgressiveRender() {
 
 // Traces a ray given at a image -> world coordinate, finds object intersections, returns a pixel color
 ofColor RayTracer::Raytrace(glm::vec3 o, int u, int v){
-	glm::vec3 d = glm::normalize(rt.viewPlane.PlaneToWorld(u, v) - (o));
+	glm::vec3 d = normalize(rt.viewPlane.PlaneToWorld(u, v) - (o));
 	Ray* r = new Ray(o, d);
+	rays.push_back(r);
 
 	float low = FLT_MAX;
 	SceneObject* nearest = nullptr;
 
 	for (SceneObject* s : sceneObjects) {
 		if (s->intersect(*r, s)) {
-			cout << "Intersect with: " << s << endl;
 			if (s->t < low) {
 				low = s->t;
 				nearest = s;
@@ -244,17 +253,9 @@ glm::vec3 ViewPlane::PlaneToWorld(int u, int v) {
 	float nu = u / RENDER_WIDTH;
 	float nv = v / RENDER_HEIGHT;
 
-	ofMatrix4x4 T;
-	T.makeTranslationMatrix(rt.viewPlane.p);
-
-	ofMatrix4x4 R;
-	R.makeRotationMatrix(rt.viewPlane.plane.getOrientationQuat());
-
-	ofMatrix4x4 transform = T * R;
-	ofVec4f uvw(nu, nv, 0, 1);
-	uvw = uvw * transform;
-
-	return glm::vec3(uvw.x, uvw.y, uvw.z);
+	glm::vec3 right = glm::normalize(glm::cross(glm::vec3(0, 0, 1), rt.viewPlane.n));
+	glm::vec3 down = glm::normalize(glm::cross(right, n));
+	return rt.viewPlane.p + (right * rt.viewPlane.w * nu + down * rt.viewPlane.h * nv);
 }
 
 void Ray::draw() {
