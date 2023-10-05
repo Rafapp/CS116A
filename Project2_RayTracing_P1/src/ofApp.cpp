@@ -8,7 +8,7 @@
 // Global vars
 RayTracer rt;
 int sampleNumber;
-int sampleCount = 10;
+int sampleCount = 50;
 // To save: img.save("myPic.jpg");
 
 #pragma region Helper Functions
