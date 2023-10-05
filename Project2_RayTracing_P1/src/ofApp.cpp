@@ -1,11 +1,14 @@
 #include "ofApp.h"
 #include <glm/gtx/intersect.hpp>
+#include <Windows.h>
 
 // BY: Rafael Padilla Perez
 // 2023
 
 // Global vars
 RayTracer rt;
+int sampleNumber;
+int sampleCount = 10;
 // To save: img.save("myPic.jpg");
 
 #pragma region Helper Functions
@@ -17,19 +20,17 @@ RayTracer rt;
 void ofApp::setup(){
 	// General setup
 	ofSetBackgroundColor(ofColor::black);
-    
+
     // GUI
     gui.setup();
     gui.add(l_title.setup("", "RAYTRACER:By@Rafagamedev"));
-
 	gui.add(l_rendering.setup("", "Rendering"));
     gui.add(t_pRendering.setup("Progressive rendering", false));
-	gui.add(b_setCamera.setup("Align render to view"));
 	gui.add(b_render.setup("Render image"));
 
 	gui.add(l_controls.setup("", "Controls"));
 	gui.add(t_showGrid.setup("Show grid", false));
-	gui.add(t_renderPlane.setup("Show render plane", false));
+	gui.add(t_renderPlane.setup("Show last viewplane", false));
     gui.add(b_save.setup("Save image ..."));
     gui.add(l_save.setup("", ""));
 
@@ -68,13 +69,9 @@ void ofApp::update(){
 	// Progressively render, and display image
 	if (t_pRendering && !bInteracting && bMouseButton == false && !rt.bShowImage) {
 		rt.bRendered = false;
-		rt.ProgressiveRender();
 		rt.bShowImage = true;
-	}
-
-	// Update the view plane position to the frustum's near plane
-	if (b_setCamera) {
-		rt.viewPlane.update();
+		rt.out.setColor(0);
+		sampleNumber = sampleCount;
 	}
     
     // Save message
@@ -83,6 +80,7 @@ void ofApp::update(){
 }
 
 //--------------------------------------------------------------
+
 void ofApp::draw(){
 	ofEnableDepthTest();
 
@@ -106,6 +104,10 @@ void ofApp::draw(){
 	if (rt.bShowImage) {
 		ofSetColor(255);
 		rt.out.draw(0, 0); 
+		if (sampleNumber > 0) {
+			rt.ProgressiveRender();
+			sampleNumber--;
+		}
 	}
 
     gui.draw();
@@ -175,10 +177,12 @@ void RayTracer::Render(){
 
 	float t0 = ofGetElapsedTimef();
 
+	rt.viewPlane.update();
+
 	rt.out.allocate(RENDER_WIDTH, RENDER_HEIGHT, OF_IMAGE_COLOR);
 
+	cout << "starting render ..." << endl;
 	glm::vec3 o = renderCam.getPosition();
-
 	for (int u = 0; u < RENDER_WIDTH - 1; u++) {
 		for (int v = 0; v < RENDER_HEIGHT - 1; v++) {
 			out.setColor(u, v, Raytrace(o, u, v));
@@ -192,22 +196,25 @@ void RayTracer::Render(){
 
 // Generates a temporary image via a sampling algorithm
 void RayTracer::ProgressiveRender() {
+	if (rt.bRendered) return;
+
 	float t0 = ofGetElapsedTimef();
+
+	rt.viewPlane.update();
 
 	rt.out.allocate(RENDER_WIDTH, RENDER_HEIGHT, OF_IMAGE_COLOR);
 
-	rt.viewPlane.update();
+	cout << "starting render ..." << endl;
 	glm::vec3 o = renderCam.getPosition();
-
 	for (int u = 0; u < RENDER_WIDTH - 1; u++) {
 		for (int v = 0; v < RENDER_HEIGHT - 1; v++) {
-			out.setColor(u, v, Raytrace(o, u, v));
+			if (u % sampleNumber == 0 && v % sampleNumber == 0) out.setColor(u, v, Raytrace(o, u, v));
 		}
 	}
-
 	rt.out.update();
-	rt.bRendered = true;
-	cout << "Render complete in:" << ofGetElapsedTimef() - t0 << " s" << endl;
+
+	if(sampleNumber <= 0) rt.bRendered = true;
+	cout << "Rendered sample: " << sampleNumber << " in: " << ofGetElapsedTimef() - t0 << " s" << endl;
 }
 
 // Traces a ray given at a image -> world coordinate, finds object intersections, returns a pixel color
@@ -226,6 +233,7 @@ ofColor RayTracer::Raytrace(glm::vec3 o, int u, int v){
 			}
 		}
 	}
+
 	if (nearest) return nearest->diffuseColor;;
 	return ofColor::black;
 }
@@ -254,7 +262,8 @@ glm::vec3 ViewPlane::PlaneToWorld(int u, int v) {
 	float nv = (v - RENDER_HEIGHT/2.0) / RENDER_HEIGHT;
 
 	glm::vec3 right = glm::normalize(glm::cross(glm::vec3(0, 1, 0), n));
-	glm::vec3 down = glm::normalize(glm::cross(right, n));  
+	glm::vec3 down = glm::normalize(glm::cross(right, n)); 
+
 	return rt.viewPlane.p + ((-right * rt.viewPlane.w * nu) + down * rt.viewPlane.h * nv);
 }
 
@@ -302,47 +311,5 @@ bool Plane::intersect(Ray ray, SceneObject* s) {
 	bool intersect = glm::intersectRayPlane(ray.o, ray.d, plane ->p, plane->n, t);
 	s->t = t;
 	return intersect;
-
-	//float dist;
-	//bool insidePlane = false;
-	//Plane* plane = dynamic_cast<Plane*>(s); // TODO: Fix this, it's terrible!
-	//bool hit = glm::intersectRayPlane(ray.o, ray.d, plane->p, plane->n, dist);
-
-	//if (hit) {
-	//	return true;
-	//	//Ray r = ray;
-	//	//glm::vec3 point = r.getWorldPoint(dist);
-	//	//glm::vec3 normalAtIntersect = plane->n;
-	//	//glm::vec2 xrange = glm::vec2(p.x - w / 2, p.x + w / 2);
-	//	//glm::vec2 yrange = glm::vec2(p.y - w / 2, p.y + w / 2);
-	//	//glm::vec2 zrange = glm::vec2(p.z - h / 2, p.z + h / 2);
-	//	//// horizontal
-	//	////
-	//	//if (n == glm::vec3(0, 1, 0) || n == glm::vec3(0, -1, 0)) {
-	//	//	if (point.x < xrange[1] && point.x > xrange[0] && point.z <
-	//	//		zrange[1] && point.z > zrange[0]) {
-	//	//		insidePlane = true;
-	//	//	}
-	//	//}
-	//	//// front or back
-	//	////
-	//	//else if (n == glm::vec3(0, 0, 1) || n == glm::vec3(0, 0, -1))
-	//	//{
-	//	//	if (point.x < xrange[1] && point.x > xrange[0] && point.y <
-	//	//		yrange[1] && point.y > yrange[0]) {
-	//	//		insidePlane = true;
-	//	//	}
-	//	//}
-	//	//// left or right
-	//	////
-	//	//else if (n == glm::vec3(1, 0, 0) || n == glm::vec3(-1, 0, 0))
-	//	//{
-	//	//	if (point.y < yrange[1] && point.y > yrange[0] && point.z <
-	//	//		zrange[1] && point.z > zrange[0]) {
-	//	//		insidePlane = true;
-	//	//	}
-	//	//}
-	//}
-	//return false;
 }
 #pragma endregion

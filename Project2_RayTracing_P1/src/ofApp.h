@@ -8,7 +8,6 @@
 
 // BY: Rafael Padilla Perez
 // 2023
-
 #pragma region Raytracing
 class Ray {
 public:
@@ -118,6 +117,8 @@ class ofApp : public ofBaseApp{
         ofxPanel gui;
         ofxLabel l_title;
 
+		
+
 		ofxLabel l_rendering;
         ofxToggle t_pRendering;
 		ofxButton b_render;
@@ -125,7 +126,6 @@ class ofApp : public ofBaseApp{
 		ofxLabel l_controls;
 		ofxToggle t_showGrid;
 		ofxToggle t_renderPlane;
-        ofxButton b_setCamera;
 
         ofxButton b_save;
 		ofxLabel l_save;
