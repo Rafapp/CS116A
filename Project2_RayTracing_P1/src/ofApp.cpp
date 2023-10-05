@@ -1,6 +1,9 @@
 #include "ofApp.h"
 #include <glm/gtx/intersect.hpp>
 
+// BY: Rafael Padilla Perez
+// 2023
+
 // Global vars
 RayTracer rt;
 // To save: img.save("myPic.jpg");
@@ -21,10 +24,11 @@ void ofApp::setup(){
 
 	gui.add(l_rendering.setup("", "Rendering"));
     gui.add(t_pRendering.setup("Progressive rendering", false));
+	gui.add(b_setCamera.setup("Align render to view"));
 	gui.add(b_render.setup("Render image"));
 
 	gui.add(l_controls.setup("", "Controls"));
-    gui.add(b_setCamera.setup("Align render to view"));
+	gui.add(t_showGrid.setup("Show grid", false));
 	gui.add(t_renderPlane.setup("Show render plane", false));
     gui.add(b_save.setup("Save image ..."));
     gui.add(l_save.setup("", ""));
@@ -79,24 +83,24 @@ void ofApp::update(){
 }
 
 //--------------------------------------------------------------
-vector<Ray*> rays;
 void ofApp::draw(){
+	ofEnableDepthTest();
 
 	rt.renderCam.begin();
     ofSetColor(ofColor::white);
 	
     // Draw objects (OF preview)
-	ofDrawGrid();
+	if(t_showGrid) ofDrawGrid();
+
 	for (SceneObject* object : rt.sceneObjects) {
 		object->draw();
 	}
-	/*for (Ray* r : rays) {
-		r->draw();
-	}*/
 
 	if(t_renderPlane) rt.viewPlane.draw();
 
 	rt.renderCam.end();
+
+	ofDisableDepthTest();
 
 	// Display images in viweport
 	if (rt.bShowImage) {
@@ -169,8 +173,6 @@ void ofApp::dragEvent(ofDragInfo dragInfo){
 void RayTracer::Render(){
 	if (rt.bRendered) return;
 
-	rt.viewPlane.update();
-
 	float t0 = ofGetElapsedTimef();
 
 	rt.out.allocate(RENDER_WIDTH, RENDER_HEIGHT, OF_IMAGE_COLOR);
@@ -212,7 +214,6 @@ void RayTracer::ProgressiveRender() {
 ofColor RayTracer::Raytrace(glm::vec3 o, int u, int v){
 	glm::vec3 d = normalize(rt.viewPlane.PlaneToWorld(u, v) - (o));
 	Ray* r = new Ray(o, d);
-	rays.push_back(r);
 
 	float low = FLT_MAX;
 	SceneObject* nearest = nullptr;
@@ -254,7 +255,7 @@ glm::vec3 ViewPlane::PlaneToWorld(int u, int v) {
 
 	glm::vec3 right = glm::normalize(glm::cross(glm::vec3(0, 1, 0), n));
 	glm::vec3 down = glm::normalize(glm::cross(right, n));  
-	return rt.viewPlane.p + (right * rt.viewPlane.w * nu + down * rt.viewPlane.h * nv);
+	return rt.viewPlane.p + ((-right * rt.viewPlane.w * nu) + down * rt.viewPlane.h * nv);
 }
 
 void Ray::draw() {
@@ -295,7 +296,53 @@ void Plane::draw() {
 	plane.draw();
 }
 
-bool Plane::intersect(Ray r, SceneObject* s) {
-	return false;
+bool Plane::intersect(Ray ray, SceneObject* s) {
+	float t;
+	Plane* plane = dynamic_cast<Plane*>(s); // TODO: Fix this, it's terrible!
+	bool intersect = glm::intersectRayPlane(ray.o, ray.d, plane ->p, plane->n, t);
+	s->t = t;
+	return intersect;
+
+	//float dist;
+	//bool insidePlane = false;
+	//Plane* plane = dynamic_cast<Plane*>(s); // TODO: Fix this, it's terrible!
+	//bool hit = glm::intersectRayPlane(ray.o, ray.d, plane->p, plane->n, dist);
+
+	//if (hit) {
+	//	return true;
+	//	//Ray r = ray;
+	//	//glm::vec3 point = r.getWorldPoint(dist);
+	//	//glm::vec3 normalAtIntersect = plane->n;
+	//	//glm::vec2 xrange = glm::vec2(p.x - w / 2, p.x + w / 2);
+	//	//glm::vec2 yrange = glm::vec2(p.y - w / 2, p.y + w / 2);
+	//	//glm::vec2 zrange = glm::vec2(p.z - h / 2, p.z + h / 2);
+	//	//// horizontal
+	//	////
+	//	//if (n == glm::vec3(0, 1, 0) || n == glm::vec3(0, -1, 0)) {
+	//	//	if (point.x < xrange[1] && point.x > xrange[0] && point.z <
+	//	//		zrange[1] && point.z > zrange[0]) {
+	//	//		insidePlane = true;
+	//	//	}
+	//	//}
+	//	//// front or back
+	//	////
+	//	//else if (n == glm::vec3(0, 0, 1) || n == glm::vec3(0, 0, -1))
+	//	//{
+	//	//	if (point.x < xrange[1] && point.x > xrange[0] && point.y <
+	//	//		yrange[1] && point.y > yrange[0]) {
+	//	//		insidePlane = true;
+	//	//	}
+	//	//}
+	//	//// left or right
+	//	////
+	//	//else if (n == glm::vec3(1, 0, 0) || n == glm::vec3(-1, 0, 0))
+	//	//{
+	//	//	if (point.y < yrange[1] && point.y > yrange[0] && point.z <
+	//	//		zrange[1] && point.z > zrange[0]) {
+	//	//		insidePlane = true;
+	//	//	}
+	//	//}
+	//}
+	//return false;
 }
 #pragma endregion

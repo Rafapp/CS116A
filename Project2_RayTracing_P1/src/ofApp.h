@@ -6,6 +6,9 @@
 #define RENDER_WIDTH 1280.0
 #define RENDER_HEIGHT 720.0
 
+// BY: Rafael Padilla Perez
+// 2023
+
 #pragma region Raytracing
 class Ray {
 public:
@@ -110,7 +113,8 @@ class ofApp : public ofBaseApp{
 
 		bool bInteracting = false;
 		bool bMouseButton = false;
-    
+
+		// GUI
         ofxPanel gui;
         ofxLabel l_title;
 
@@ -119,6 +123,7 @@ class ofApp : public ofBaseApp{
 		ofxButton b_render;
 
 		ofxLabel l_controls;
+		ofxToggle t_showGrid;
 		ofxToggle t_renderPlane;
         ofxButton b_setCamera;
 
