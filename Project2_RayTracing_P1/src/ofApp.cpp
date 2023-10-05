@@ -80,7 +80,6 @@ void ofApp::update(){
 
 //--------------------------------------------------------------
 vector<Ray*> rays;
-
 void ofApp::draw(){
 
 	rt.renderCam.begin();
@@ -248,13 +247,13 @@ void ViewPlane::update(){
 	rt.viewPlane.n = rt.renderCam.getLookAtDir();
 }
 
-// Convert from uv plane coordinates, to world coordinates using the translation and rotation matrix
+// Convert from uv plane coordinates, using 2 basis vectors
 glm::vec3 ViewPlane::PlaneToWorld(int u, int v) {
-	float nu = u / RENDER_WIDTH;
-	float nv = v / RENDER_HEIGHT;
+	float nu = (u - RENDER_WIDTH/2.0) / RENDER_WIDTH;
+	float nv = (v - RENDER_HEIGHT/2.0) / RENDER_HEIGHT;
 
-	glm::vec3 right = glm::normalize(glm::cross(glm::vec3(0, 0, 1), rt.viewPlane.n));
-	glm::vec3 down = glm::normalize(glm::cross(right, n));
+	glm::vec3 right = glm::normalize(glm::cross(glm::vec3(0, 1, 0), n));
+	glm::vec3 down = glm::normalize(glm::cross(right, n));  
 	return rt.viewPlane.p + (right * rt.viewPlane.w * nu + down * rt.viewPlane.h * nv);
 }
 
