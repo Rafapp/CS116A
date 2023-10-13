@@ -215,7 +215,7 @@ ofColor RayTracer::lambert(const ofColor& diffuse, float intensity, float distan
 
 ofColor RayTracer::phong(const ofColor& specular, float intensity, float distance, float pow, const glm::vec3& n, const glm::vec3& l, const glm::vec3& v) {
 	// LI = ks * I/r^2 * max(0, n dot h)^pow
-	// h = = n + l
+	// h = = norm(v + l)
 	glm::vec3 h = glm::normalize(v + l);
 	return specular * (intensity / glm::pow2(distance)) * glm::max(0.0f, glm::pow(glm::dot(h, n), pow));
 }
@@ -270,7 +270,7 @@ void RayTracer::Render() {
 						// Phong
 						if (bPhong) {
 							glm::vec3 v = rOut->d;
-							result += phong(s->specularColor, li->i, d, 20, n, l, v);
+							result += phong(s->specularColor, li->i, d, 20, n, -l, v);
 						}
 					}
 
