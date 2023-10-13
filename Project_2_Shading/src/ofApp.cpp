@@ -65,9 +65,9 @@ void ofApp::setup() {
 	rt.sceneObjects.push_back(new Sphere(glm::vec3(2.5, 0.5, 0), 1, ofColor::blue, ofColor::white));
 
 	//Lights
-	rt.lights.push_back(new Light(glm::vec3(7.5, 5, 0), 10)); // Back Light
-	rt.lights.push_back(new Light(glm::vec3(0, 5, -7.5), 20)); // Fill light (side)
-	rt.lights.push_back(new Light(glm::vec3(-7.5, 5, 0), 40)); // Key light (front)
+	rt.lights.push_back(new Light(glm::vec3(-7.5, 2.5, 0), 10)); // Backlight
+	rt.lights.push_back(new Light(glm::vec3(7.5, 2.5, 0), 40)); // Keylight (front)
+	rt.lights.push_back(new Light(glm::vec3(0, 2.5, -7.5), 20)); // Fill light (left)
 
 }
 
@@ -244,52 +244,68 @@ void RayTracer::Render() {
 
 	for (int u = 0; u < RENDER_WIDTH - 1; u++) {
 		for (int v = 0; v < RENDER_HEIGHT - 1; v++) {
+
 			Ray* rOut = new Ray(glm::vec3(0), glm::vec3(0));
 			SceneObject* s = Raytrace(o, u, v, *rOut);
-
-			// If hit
+			
+			// Hit
 			if (s != nullptr) {
-				// Lambert
-				if (bLamb) {
-					ofColor result = s->diffuseColor * .25;
-					glm::vec3 intersectP = intersectP = rOut->o + rOut->d * s->t;
-					glm::vec3 n;
-					
-					if (dynamic_cast<Sphere*>(s)) {
-						n = glm::normalize(intersectP - s->p);
-					}
-					else if (dynamic_cast<Plane*>(s)) {
-						n = dynamic_cast<Plane*>(s)->n;
-					}
 
-					for (Light* li : lights) {
-						glm::vec3 l = glm::normalize(li->p - s->p);
-						float d = glm::distance(li->p, intersectP);
-						result += lambert(s->diffuseColor, li->i, d, n, l);
+				// Get the hit point
+				glm::vec3 intersectP = rOut->o + rOut->d * s->t;
 
-						// Phong
-						if (bPhong) {
-							glm::vec3 v = rOut->d;
-							result += phong(s->specularColor, li->i, d, 20, n, -l, v);
+				bool shadowed = false;
+				ofColor shadowColor = .25 * s->diffuseColor;
+
+				for (Light* li : lights) {
+
+					// Create shadow ray from hit point to light point, with an epsilon
+					Ray* sRay = new Ray(rOut->o + rOut->d * (s->t - 0.01), glm::normalize(li->p - intersectP));
+
+					// Check if that ray is hit by an object, if so, set pixel to black and run next iteration
+					for (SceneObject* s2 : sceneObjects) {
+						if (s2->intersect(*sRay, s2)) {
+							shadowed = true;
+							out.setColor(u, v, shadowColor);
+							break;
 						}
 					}
 
-					out.setColor(u, v, result);
-				}
-				
-				// No shading
-				else if (!bLamb && !bPhong) {
-					out.setColor(u, v, Raytrace(o, u, v, *rOut)->diffuseColor);
-				}
+					if (!shadowed) {
+						// Lambert
+						if (bLamb) {
+							ofColor result = s->diffuseColor * .25;
+							glm::vec3 n;
 
-				/*ofColor ambient = 50;
-				Light* l = rt.lights[0];
-				ambient += lambert(s->diffuseColor, l->i, s->t, glm::normalize(s->intersectP - s->p), glm::normalize(l->p - s->p));
-				out.setColor(u, v, ambient);*/
-				/*for (Light* l : rt.lights) {
+							if (dynamic_cast<Sphere*>(s)) {
+								n = glm::normalize(intersectP - s->p);
+							}
+							else if (dynamic_cast<Plane*>(s)) {
+								n = dynamic_cast<Plane*>(s)->n;
+							}
 
-				}*/
+							for (Light* li : lights) {
+
+								glm::vec3 l = glm::normalize(li->p - s->p);
+								float d = glm::distance(li->p, intersectP);
+								result += lambert(s->diffuseColor, li->i, d, n, l);
+
+								// Phong
+								if (bPhong) {
+									glm::vec3 v = rOut->d;
+									result += phong(s->specularColor, li->i, d, 20, n, -l, v);
+								}
+							}
+							out.setColor(u, v, result);
+						}
+						// No shading
+						else if (!bLamb && !bPhong) {
+							out.setColor(u, v, Raytrace(o, u, v, *rOut)->diffuseColor);
+						}
+					}
+				}
 			}
+			// No hit, set color to skybox
 			else out.setColor(u, v, ofColor::black);
 		}
 	}
