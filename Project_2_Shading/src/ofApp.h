@@ -106,6 +106,7 @@ public:
 	virtual SceneObject* Raytrace(glm::vec3 o, int x, int y, Ray& rOut);
 	virtual void ProgressiveRender();
 	ofColor lambert(const ofColor& diffuse, float intensity, float distance, const glm::vec3& n, const glm::vec3& l);
+	ofColor phong(const ofColor& specular, float intensity, float distance, float pow, const glm::vec3& n, const glm::vec3& l, const glm::vec3& v);
 };
 #pragma endregion
 

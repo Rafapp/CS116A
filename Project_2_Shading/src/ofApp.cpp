@@ -60,14 +60,14 @@ void ofApp::setup() {
 	// Scene objects
 	rt.sceneObjects.push_back(new Plane(glm::vec3(0, -5, 0), glm::vec3(0, 1, 0), 20, 20, ofColor::lightGray, ofColor::lightGray));
 
-	rt.sceneObjects.push_back(new Sphere(glm::vec3(0, 0, .5), 1, ofColor::red, ofColor::red));
-	rt.sceneObjects.push_back(new Sphere(glm::vec3(-2.5, 0, -0.5), 1, ofColor::green, ofColor::green));
-	rt.sceneObjects.push_back(new Sphere(glm::vec3(-5, 0.5, 0), 1, ofColor::blue, ofColor::blue));
+	rt.sceneObjects.push_back(new Sphere(glm::vec3(0, 0, .5), 1, ofColor::red, ofColor::white));
+	rt.sceneObjects.push_back(new Sphere(glm::vec3(-2.5, 0, -0.5), 1, ofColor::green, ofColor::white));
+	rt.sceneObjects.push_back(new Sphere(glm::vec3(2.5, 0.5, 0), 1, ofColor::blue, ofColor::white));
 
 	//Lights
-	rt.lights.push_back(new Light(glm::vec3(0, 5, 0), 500.0));
-	rt.lights.push_back(new Light(glm::vec3(10, 5, 0), 500.0));
-	rt.lights.push_back(new Light(glm::vec3(-10, 5, 0), 500.0));
+	rt.lights.push_back(new Light(glm::vec3(7.5, 5, 0), 10)); // Back Light
+	rt.lights.push_back(new Light(glm::vec3(0, 5, -7.5), 20)); // Fill light (side)
+	rt.lights.push_back(new Light(glm::vec3(-7.5, 5, 0), 40)); // Key light (front)
 
 }
 
@@ -209,8 +209,15 @@ void ofApp::dragEvent(ofDragInfo dragInfo) {
 
 #pragma region RayTracing
 ofColor RayTracer::lambert(const ofColor& diffuse, float intensity, float distance, const glm::vec3& n, const glm::vec3& l) {
-	// kd * I/r^2 * max(0, n dot l)
+	// LI = kd * I/r^2 * max(0, n dot l)
 	return diffuse * (intensity / glm::pow2(distance)) * glm::max(0.0f, glm::dot(n, l));
+}
+
+ofColor RayTracer::phong(const ofColor& specular, float intensity, float distance, float pow, const glm::vec3& n, const glm::vec3& l, const glm::vec3& v) {
+	// LI = ks * I/r^2 * max(0, n dot h)^pow
+	// h = = n + l
+	glm::vec3 h = glm::normalize(v + l);
+	return specular * (intensity / glm::pow2(distance)) * glm::max(0.0f, glm::pow(glm::dot(h, n), pow));
 }
 
 
@@ -244,19 +251,27 @@ void RayTracer::Render() {
 			if (s != nullptr) {
 				// Lambert
 				if (bLamb) {
-					ofColor result = s->diffuseColor * .5;
-					glm::vec3 intersectP = rOut->o + rOut->d * s->t;
-					glm::vec3 n = glm::normalize(intersectP - s->p);
+					ofColor result = s->diffuseColor * .25;
+					glm::vec3 intersectP = intersectP = rOut->o + rOut->d * s->t;
+					glm::vec3 n;
+					
+					if (dynamic_cast<Sphere*>(s)) {
+						n = glm::normalize(intersectP - s->p);
+					}
+					else if (dynamic_cast<Plane*>(s)) {
+						n = dynamic_cast<Plane*>(s)->n;
+					}
 
 					for (Light* li : lights) {
 						glm::vec3 l = glm::normalize(li->p - s->p);
 						float d = glm::distance(li->p, intersectP);
 						result += lambert(s->diffuseColor, li->i, d, n, l);
-					}
 
-					// Phong
-					if (t_phong) {
-
+						// Phong
+						if (bPhong) {
+							glm::vec3 v = rOut->d;
+							result += phong(s->specularColor, li->i, d, 20, n, l, v);
+						}
 					}
 
 					out.setColor(u, v, result);
