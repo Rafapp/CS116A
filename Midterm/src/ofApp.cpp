@@ -488,10 +488,16 @@ int AreaLight::getRaySamples(glm::vec3 hitPoint, vector<Ray*>& samples) {
     int sampleCount = 0;
     // dx = width/nDivisionsX
     // dy = height/nDivisionsY
-    // 
-    // for i in nDivisionsX:
-    //    for j in nDivisionsY:
-    //        
+    // float z = lightPos.z
+    // for i = 0 in len(nDivisionsX):
+    //    for j = 0 in len(nDivisionsY):
+    //        float xmin = i * dx;
+    //        float xmax = (i + 1) * dx;
+    //        float ymin = j * dy;
+    //        float ymax = (j + 1) * dy;
+    //        for i = 0 in len(nSamples):
+    //          push new Ray(vec3(random(xmin, xmax), random(ymin, ymax), z));
+    //          ~ draw test spheres here to check if it's working
 
     glm::vec3 ln = glm::normalize(p - hitPoint);
     Ray* r = new Ray(hitPoint + (ln * 0.1), ln);
