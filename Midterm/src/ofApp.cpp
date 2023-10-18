@@ -9,6 +9,7 @@
 RayTracer rt;
 int sampleNumber;
 int sampleCount = 50;
+AreaLight* areaLight;
 
 ofxToggle* t_lambert;
 ofxToggle* t_phong;
@@ -33,6 +34,7 @@ void ofApp::setup() {
     ofSetBackgroundColor(ofColor::black);
 
     // GUI
+    // TODO: Group these up under "rendering" section
     gui.setup();
     gui.add(l_title.setup("", "RAYTRACER:By@Rafagamedev"));
     gui.add(l_rendering.setup("", "Rendering"));
@@ -42,8 +44,6 @@ void ofApp::setup() {
     gui.add(l_controls.setup("", "Controls"));
     gui.add(t_showGrid.setup("Show grid", false));
     gui.add(t_renderPlane.setup("Show last viewplane", false));
-    gui.add(b_save.setup("Save image ..."));
-    gui.add(l_save.setup("", ""));
 
     t_lambert = new ofxToggle();
     t_phong = new ofxToggle();
@@ -51,6 +51,25 @@ void ofApp::setup() {
     gui.add(l_shading.setup("", "Shading"));
     gui.add(t_lambert->setup("Lambert", false));
     gui.add(t_phong->setup("Phong", false));
+
+    gui.add(l_lights.setup("", "Lighting"));
+
+    g_dimensions.setup("Dimensions");
+    g_dimensions.add(f_areaLightWidth.setup("w", 1, 0, 10));
+    g_dimensions.add(f_areaLightHeight.setup("h", 1, 0, 10));
+    gui.add(&g_dimensions);
+
+    g_position.setup("Position");
+    g_position.add(f_areaLightx.setup("x", 0, -1000, 1000));
+    g_position.add(f_areaLighty.setup("y", 10, -1000, 1000));
+    g_position.add(f_areaLightz.setup("z", 0, -1000, 1000));
+    gui.add(&g_position);
+
+    g_sampling.setup("Sampling");
+    g_sampling.add(i_nDivsWidth.setup("x divs", 10));
+    g_sampling.add(i_nDivsHeight.setup("y divs", 10));
+    g_sampling.add(i_nSamples.setup("# samples", 1));
+    gui.add(&g_sampling);
 
     // Preview cam
     rt.renderCam.setPosition(glm::vec3(-20, 0, 0));
@@ -64,9 +83,11 @@ void ofApp::setup() {
     rt.sceneObjects.push_back(new Sphere(glm::vec3(2.5, 0.5, 0), 1, ofColor::blue, ofColor::white));
 
     //Lights
-    rt.lights.push_back(new Light(glm::vec3(-7.5, 2.5, 0), 50)); // Backlight
-    rt.lights.push_back(new Light(glm::vec3(7.5, 2.5, 0), 50)); // Keylight (front)
-    rt.lights.push_back(new Light(glm::vec3(0, 2.5, 7.5), 50)); // Fill light (left)
+    areaLight = new AreaLight(glm::vec3(0, 10, 0), 50.0f); // Keep pointer ref to light, so we can modify its values with ofxGUI
+    rt.lights.push_back(areaLight);
+    rt.lights.push_back(new PointLight(glm::vec3(-7.5, 2.5, 0), 50.0f)); // Backlight
+    rt.lights.push_back(new PointLight(glm::vec3(7.5, 2.5, 0), 50.0f)); // Keylight (front)
+    rt.lights.push_back(new PointLight(glm::vec3(0, 2.5, 7.5), 50.0f)); // Fill light (left)
 
 }
 
@@ -98,6 +119,14 @@ void ofApp::update() {
         sampleNumber = sampleCount;
     }
 
+    // Update area light based on sliders
+    areaLight->width = f_areaLightWidth;
+    areaLight->height = f_areaLightHeight;
+    areaLight->p = glm::vec3(f_areaLightx.getParameter().cast<float>(), f_areaLighty.getParameter().cast<float>(), f_areaLightz.getParameter().cast<float>());
+    areaLight->nDivsWidth = i_nDivsWidth;
+    areaLight->nDivsHeight = i_nDivsHeight;
+    areaLight->nSamples = i_nSamples;
+
     // Save message
     if (b_save) l_save = "Image saved";
     else l_save = "";
@@ -120,7 +149,7 @@ void ofApp::draw() {
 
     if (t_renderPlane) rt.viewPlane.draw();
 
-    for (Light* light : rt.lights) {
+    for (auto light : rt.lights) {
         light->draw();
     }
 
@@ -219,6 +248,19 @@ ofColor RayTracer::phong(const ofColor& specular, float intensity, float distanc
     return specular * (intensity / glm::pow2(distance)) * glm::max(0.0f, glm::pow(glm::dot(h, n), pow));
 }
 
+bool IsShadowed(Ray* r, SceneObject* s) {
+
+    for (SceneObject* s2 : rt.sceneObjects) {
+
+        // Light ray is blocked, we are shadowed
+        if (s2 != s && s2->intersect(*r, s2)) {
+            return true;
+        }
+    }
+
+    // Light ray is unblocked, we are unshadowed
+    return false;
+}
 
 // Generates the final image pixel by pixel
 void RayTracer::Render() {
@@ -251,25 +293,24 @@ void RayTracer::Render() {
                 out.setColor(u, v, ofColor::black);
             }
             else {
+
                 // Get the hit point
                 glm::vec3 intersectP = rOut.o + rOut.d * s->t;
 
-                bool shadowed = false;
+                // Ambient color
                 ofColor result = ofColor::black;
 
                 for (Light* li : lights) {
-                    // Create shadow ray from hit point to light point, with an epsilon
-                    glm::vec3 ln = glm::normalize(li->p - intersectP);
-                    Ray sRay(intersectP + ln * 0.1, ln);
 
-                    // Check if that ray is hit by an object, if so, set pixel to black and run next iteration
-                    shadowed = false;
-                    for (SceneObject* s2 : sceneObjects) {
-                        if (s2 != s && s2->intersect(sRay, s2)) {
-                            shadowed = true;
-                            break;
-                        }
-                    }
+                    // Get light rays for shadow calculations
+                    vector<Ray*> lightRays;
+                    int numRays = li->getRaySamples(intersectP, lightRays);
+                    
+                    // Check for shadows in all light rays
+                    bool shadowed = false;
+                    shadowed = IsShadowed(lightRays[0], s);
+                    
+                    // TODO: Loop through the light rays from the area light here
 
                     if (!shadowed) {
                         // No shading
@@ -433,6 +474,32 @@ SceneObject* RayTracer::Raytrace(glm::vec3 o, int u, int v, Ray& rOut) {
     // No hit :(
     return nullptr;
 }
+
+// Get light ray from a point light
+int PointLight::getRaySamples(glm::vec3 hitPoint, vector<Ray*> &samples) {
+    glm::vec3 ln = glm::normalize(p - hitPoint);
+    Ray* r = new Ray(hitPoint + (ln * 0.1), ln);
+    samples.push_back(r);
+    return 1;
+}
+
+// Get light rays from an area light
+int AreaLight::getRaySamples(glm::vec3 hitPoint, vector<Ray*>& samples) {
+    int sampleCount = 0;
+    // dx = width/nDivisionsX
+    // dy = height/nDivisionsY
+    // 
+    // for i in nDivisionsX:
+    //    for j in nDivisionsY:
+    //        
+
+    glm::vec3 ln = glm::normalize(p - hitPoint);
+    Ray* r = new Ray(hitPoint + (ln * 0.1), ln);
+    samples.push_back(r);
+
+    return sampleCount;
+}
+
 
 // Draw the view plane for debugging
 void ViewPlane::draw() {

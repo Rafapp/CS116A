@@ -78,15 +78,45 @@ public:
     glm::vec3 p;
     float i;
 
+    virtual void draw() = 0;
+    virtual int getRaySamples(glm::vec3 hitPoint, vector<Ray*> &samples) = 0;
+
+    Light(glm::vec3 p, float i) : p(p), i(i) {}
+};
+
+class PointLight : public Light {
+public:
     void draw() {
         ofSetColor(ofColor::yellow);
         ofDrawSphere(p, .2);
     };
 
-    Light(glm::vec3 p, float i) : p(p), i(i) {
-        cout << "light created with i: " << i << endl;
-        cout << "at position: " << p << endl;
-    }
+    virtual int getRaySamples(glm::vec3 hitPoint, vector<Ray*>& samples);
+
+    PointLight(glm::vec3 p, float i) : Light(p, i) {}
+};
+
+class AreaLight : public Light {
+public:
+    float width = 5, height = 5;
+    int nDivsWidth = 10, nDivsHeight = 10;
+    int nSamples = 1;
+    ofPlanePrimitive plane;
+
+    void draw() {
+        ofFill();
+        ofSetColor(ofColor::yellow);
+        plane.setPosition(p);
+        plane.setWidth(width);
+        plane.setHeight(height);
+        plane.setResolution(2, 2);
+        plane.setOrientation(glm::vec3(90,0,0));
+        plane.draw();
+    };
+
+    virtual int getRaySamples(glm::vec3 hitPoint, vector<Ray*>& samples);
+
+    AreaLight(glm::vec3 p, float i) : Light(p, i) {}
 };
 
 class RayTracer : ofBaseApp {
@@ -134,24 +164,46 @@ public:
     bool bInteracting = false;
     bool bMouseButton = false;
 
-    // GUI
+    AreaLight* areaLight;
+
+    /*
+     * GUI
+     */
+
     ofxPanel gui;
     ofxLabel l_title;
 
+    // Render settings
     ofxLabel l_rendering;
     ofxToggle t_pRendering;
     ofxButton b_render;
 
+    // Preview controls
     ofxLabel l_controls;
     ofxToggle t_showGrid;
     ofxToggle t_renderPlane;
 
+    // Shading controls
     ofxLabel l_shading;
 
+    // Area light controls
+    ofxLabel l_lights;
+
+    ofxGuiGroup g_dimensions;
+    ofxFloatField f_areaLightWidth;
+    ofxFloatField f_areaLightHeight;
+
+    ofxGuiGroup g_position;
+    ofxFloatField f_areaLightx;
+    ofxFloatField f_areaLighty;
+    ofxFloatField f_areaLightz;
+
+    ofxGuiGroup g_sampling;
+    ofxIntField i_nDivsWidth;
+    ofxIntField i_nDivsHeight;
+    ofxIntField i_nSamples;
 
     ofxButton b_save;
     ofxLabel l_save;
-
-
 };
 #pragma endregion
