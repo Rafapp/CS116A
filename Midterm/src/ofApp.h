@@ -101,17 +101,22 @@ public:
     float width = 5, height = 5;
     int nDivsWidth = 10, nDivsHeight = 10;
     int nSamples = 1;
-    ofPlanePrimitive plane;
 
     void draw() {
-        ofFill();
         ofSetColor(ofColor::yellow);
-        plane.setPosition(p);
-        plane.setWidth(width);
-        plane.setHeight(height);
-        plane.setResolution(2, 2);
-        plane.setOrientation(glm::vec3(90,0,0));
-        plane.draw();
+        float dx = width / nDivsWidth;
+        float dz = height / nDivsHeight;
+        float y = p.y;
+        for (int i = 0; i <= nDivsWidth; i++) {
+            glm::vec3 start = glm::vec3(i * dx, y, 0);
+            glm::vec3 end = glm::vec3(i * dx, y, height);
+            ofDrawLine(start - width / 2, end - width / 2);
+        }
+        for (int j = 0; j <= nDivsHeight; j++) {
+            glm::vec3 start = glm::vec3(0, y, j * dz);
+            glm::vec3 end = glm::vec3(width, y, j * dz);
+            ofDrawLine(start - height / 2, end - height/2);
+        }
     };
 
     virtual int getRaySamples(glm::vec3 hitPoint, vector<Ray*>& samples);

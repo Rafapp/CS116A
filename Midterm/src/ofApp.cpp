@@ -495,7 +495,7 @@ int PointLight::getRaySamples(glm::vec3 hitPoint, vector<Ray*> &samples) {
 
 // Get light rays from an area light
 int AreaLight::getRaySamples(glm::vec3 hitPoint, vector<Ray*>& samples) {
-   int rayCount = 0;
+    int rayCount = 0;
     glm::vec3 o = glm::vec3(0);
     float dx = width / nDivsWidth;
     float dz = height / nDivsHeight;
