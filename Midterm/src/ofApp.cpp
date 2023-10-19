@@ -303,50 +303,52 @@ void RayTracer::Render() {
                 glm::vec3 intersectP = rOut.o + rOut.d * s->t;
 
                 // Ambient color
-                ofColor result = ofColor::black;
+                ofColor result = s->diffuseColor * 0.25f;
 
                 for (Light* li : lights) {
 
                     // Get light rays for shadow calculations
                     vector<Ray*> lightRays;
                     int rayCount = li->getRaySamples(intersectP, lightRays);
-                    
+
+                    bool shadowed = false;
+                    float attenuation = 1.0f;
                     for (Ray* r : lightRays) {
-
                         // Check for shadows in all light rays
-                        bool shadowed = false;
-                        shadowed = IsShadowed(r, s);
+                        if (IsShadowed(r, s)) { 
+                            shadowed = true; 
+                            attenuation -= 1.0f / rayCount;
+                        }
+                    }
+                    result *= attenuation;
 
-                        // TODO: Loop through the light rays from the area light here
+                    if (!shadowed) {
+                        // No shading
+                        if (!bLamb && !bPhong) {
+                            result += s->diffuseColor;
+                        }
 
-                        if (!shadowed) {
-                            // No shading
-                            if (!bLamb && !bPhong) {
-                                result += s->diffuseColor;
+                        if (bLamb) {
+                            // Calculate hit object normal
+                            glm::vec3 n;
+
+                            if (dynamic_cast<Sphere*>(s)) {
+                                n = glm::normalize(intersectP - s->p);
+                            }
+                            else if (dynamic_cast<Plane*>(s)) {
+                                n = dynamic_cast<Plane*>(s)->n;
                             }
 
-                            if (bLamb) {
-                                // Calculate hit object normal
-                                glm::vec3 n;
+                            glm::vec3 l = glm::normalize(li->p - intersectP);
+                            float d = glm::distance(li->p, intersectP);
 
-                                if (dynamic_cast<Sphere*>(s)) {
-                                    n = glm::normalize(intersectP - s->p);
-                                }
-                                else if (dynamic_cast<Plane*>(s)) {
-                                    n = dynamic_cast<Plane*>(s)->n;
-                                }
+                            // Lambert component
+                            result += lambert(s->diffuseColor, li->i, d, n, l);
 
-                                glm::vec3 l = glm::normalize(li->p - intersectP);
-                                float d = glm::distance(li->p, intersectP);
-
-                                // Lambert component
-                                result += lambert(s->diffuseColor, li->i, d, n, l);
-
-                                // Phong component
-                                if (bPhong) {
-                                    glm::vec3 v = rOut.d;
-                                    result += phong(s->specularColor, li->i, d, 30, n, -l, v);
-                                }
+                            // Phong component
+                            if (bPhong) {
+                                glm::vec3 v = rOut.d;
+                                result += phong(s->specularColor, li->i, d, 30, n, -l, v);
                             }
                         }
                     }
@@ -392,53 +394,55 @@ void RayTracer::ProgressiveRender() {
                     out.setColor(u, v, ofColor::black);
                 }
                 else {
+
                     // Get the hit point
                     glm::vec3 intersectP = rOut.o + rOut.d * s->t;
 
-                    bool shadowed = false;
+                    // Ambient color
                     ofColor result = ofColor::black;
 
                     for (Light* li : lights) {
-                        // Create shadow ray from hit point to light point, with an epsilon
-                        glm::vec3 ln = glm::normalize(li->p - intersectP);
-                        Ray sRay(intersectP + ln * 0.1, ln);
 
-                        // Check if that ray is hit by an object, if so, set pixel to black and run next iteration
-                        shadowed = false;
-                        for (SceneObject* s2 : sceneObjects) {
-                            if (s2 != s && s2->intersect(sRay, s2)) {
-                                shadowed = true;
-                                break;
-                            }
-                        }
+                        // Get light rays for shadow calculations
+                        vector<Ray*> lightRays;
+                        int rayCount = li->getRaySamples(intersectP, lightRays);
 
-                        if (!shadowed) {
-                            // No shading
-                            if (!bLamb && !bPhong) {
-                                result += s->diffuseColor;
-                            }
+                        for (Ray* r : lightRays) {
 
-                            if (bLamb) {
-                                // Calculate hit object normal
-                                glm::vec3 n;
+                            // Check for shadows in all light rays
+                            bool shadowed = false;
+                            shadowed = IsShadowed(r, s);
 
-                                if (dynamic_cast<Sphere*>(s)) {
-                                    n = glm::normalize(intersectP - s->p);
-                                }
-                                else if (dynamic_cast<Plane*>(s)) {
-                                    n = dynamic_cast<Plane*>(s)->n;
+                            // TODO: Loop through the light rays from the area light here
+
+                            if (!shadowed) {
+                                // No shading
+                                if (!bLamb && !bPhong) {
+                                    result += s->diffuseColor;
                                 }
 
-                                glm::vec3 l = glm::normalize(li->p - intersectP);
-                                float d = glm::distance(li->p, intersectP);
+                                if (bLamb) {
+                                    // Calculate hit object normal
+                                    glm::vec3 n;
 
-                                // Lambert component
-                                result += lambert(s->diffuseColor, li->i, d, n, l);
+                                    if (dynamic_cast<Sphere*>(s)) {
+                                        n = glm::normalize(intersectP - s->p);
+                                    }
+                                    else if (dynamic_cast<Plane*>(s)) {
+                                        n = dynamic_cast<Plane*>(s)->n;
+                                    }
 
-                                // Phong component
-                                if (bPhong) {
-                                    glm::vec3 v = rOut.d;
-                                    result += phong(s->specularColor, li->i, d, 30, n, -l, v);
+                                    glm::vec3 l = glm::normalize(li->p - intersectP);
+                                    float d = glm::distance(li->p, intersectP);
+
+                                    // Lambert component
+                                    result += lambert(s->diffuseColor, li->i, d, n, l);
+
+                                    // Phong component
+                                    if (bPhong) {
+                                        glm::vec3 v = rOut.d;
+                                        result += phong(s->specularColor, li->i, d, 30, n, -l, v);
+                                    }
                                 }
                             }
                         }
