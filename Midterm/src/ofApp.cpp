@@ -314,7 +314,7 @@ void RayTracer::Render() {
                     float attenuation = 1.0f;
                     for (Ray* r : lightRays) {
                         // Check for shadows in all light rays
-                        if (IsShadowed(r, s)) { 
+                        if (IsShadowed(r, s)) {
                             attenuation -= 1.0f / rayCount;
                         }
                     }
