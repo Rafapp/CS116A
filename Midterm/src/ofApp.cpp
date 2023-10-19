@@ -16,7 +16,8 @@ ofxToggle* t_phong;
 
 // Testing
 vector<Ray*> testRays;
-int testRate = 500, testCount = 0;
+vector<glm::vec3> testSpheres;
+int testRate = 10000, testCount = 0;
 
 vector<glm::vec3> intersections;
 
@@ -55,8 +56,8 @@ void ofApp::setup() {
     gui.add(l_lights.setup("", "Lighting"));
 
     g_dimensions.setup("Dimensions");
-    g_dimensions.add(f_areaLightWidth.setup("w", 1, 0, 10));
-    g_dimensions.add(f_areaLightHeight.setup("h", 1, 0, 10));
+    g_dimensions.add(f_areaLightWidth.setup("w", 5, 0, 10));
+    g_dimensions.add(f_areaLightHeight.setup("h", 5, 0, 10));
     gui.add(&g_dimensions);
 
     g_position.setup("Position");
@@ -85,9 +86,9 @@ void ofApp::setup() {
     //Lights
     areaLight = new AreaLight(glm::vec3(0, 10, 0), 50.0f); // Keep pointer ref to light, so we can modify its values with ofxGUI
     rt.lights.push_back(areaLight);
-    rt.lights.push_back(new PointLight(glm::vec3(-7.5, 2.5, 0), 50.0f)); // Backlight
-    rt.lights.push_back(new PointLight(glm::vec3(7.5, 2.5, 0), 50.0f)); // Keylight (front)
-    rt.lights.push_back(new PointLight(glm::vec3(0, 2.5, 7.5), 50.0f)); // Fill light (left)
+    //rt.lights.push_back(new PointLight(glm::vec3(-7.5, 2.5, 0), 50.0f)); // Backlight
+    //rt.lights.push_back(new PointLight(glm::vec3(7.5, 2.5, 0), 50.0f)); // Keylight (front)
+    //rt.lights.push_back(new PointLight(glm::vec3(0, 2.5, 7.5), 50.0f)); // Fill light (left)
 
 }
 
@@ -160,6 +161,10 @@ void ofApp::draw() {
 
     for (Ray* r : testRays) {
         r->draw();
+    }
+    for (glm::vec3 p : testSpheres) {
+        ofSetColor(ofColor::cyan);
+        ofDrawSphere(p,.25f);
     }
 
     rt.renderCam.end();
@@ -266,7 +271,7 @@ bool IsShadowed(Ray* r, SceneObject* s) {
 void RayTracer::Render() {
     if (rt.bRendered) return;
 
-    cout << "starting render ..." << endl;
+    cout << "rendering ..." << endl;
 
     // Time counter
     float t0 = ofGetElapsedTimef();
@@ -304,41 +309,44 @@ void RayTracer::Render() {
 
                     // Get light rays for shadow calculations
                     vector<Ray*> lightRays;
-                    int numRays = li->getRaySamples(intersectP, lightRays);
+                    int rayCount = li->getRaySamples(intersectP, lightRays);
                     
-                    // Check for shadows in all light rays
-                    bool shadowed = false;
-                    shadowed = IsShadowed(lightRays[0], s);
-                    
-                    // TODO: Loop through the light rays from the area light here
+                    for (Ray* r : lightRays) {
 
-                    if (!shadowed) {
-                        // No shading
-                        if (!bLamb && !bPhong) {
-                            result += s->diffuseColor;
-                        }
+                        // Check for shadows in all light rays
+                        bool shadowed = false;
+                        shadowed = IsShadowed(r, s);
 
-                        if (bLamb) {
-                            // Calculate hit object normal
-                            glm::vec3 n;
+                        // TODO: Loop through the light rays from the area light here
 
-                            if (dynamic_cast<Sphere*>(s)) {
-                                n = glm::normalize(intersectP - s->p);
-                            }
-                            else if (dynamic_cast<Plane*>(s)) {
-                                n = dynamic_cast<Plane*>(s)->n;
+                        if (!shadowed) {
+                            // No shading
+                            if (!bLamb && !bPhong) {
+                                result += s->diffuseColor;
                             }
 
-                            glm::vec3 l = glm::normalize(li->p - intersectP);
-                            float d = glm::distance(li->p, intersectP);
+                            if (bLamb) {
+                                // Calculate hit object normal
+                                glm::vec3 n;
 
-                            // Lambert component
-                            result += lambert(s->diffuseColor, li->i, d, n, l);
+                                if (dynamic_cast<Sphere*>(s)) {
+                                    n = glm::normalize(intersectP - s->p);
+                                }
+                                else if (dynamic_cast<Plane*>(s)) {
+                                    n = dynamic_cast<Plane*>(s)->n;
+                                }
 
-                            // Phong component
-                            if (bPhong) {
-                                glm::vec3 v = rOut.d;
-                                result += phong(s->specularColor, li->i, d, 30, n, -l, v);
+                                glm::vec3 l = glm::normalize(li->p - intersectP);
+                                float d = glm::distance(li->p, intersectP);
+
+                                // Lambert component
+                                result += lambert(s->diffuseColor, li->i, d, n, l);
+
+                                // Phong component
+                                if (bPhong) {
+                                    glm::vec3 v = rOut.d;
+                                    result += phong(s->specularColor, li->i, d, 30, n, -l, v);
+                                }
                             }
                         }
                     }
@@ -485,25 +493,27 @@ int PointLight::getRaySamples(glm::vec3 hitPoint, vector<Ray*> &samples) {
 
 // Get light rays from an area light
 int AreaLight::getRaySamples(glm::vec3 hitPoint, vector<Ray*>& samples) {
-    int sampleCount = 0;
-    // dx = width/nDivisionsX
-    // dy = height/nDivisionsY
-    // float z = lightPos.z
-    // for i = 0 in len(nDivisionsX):
-    //    for j = 0 in len(nDivisionsY):
-    //        float xmin = i * dx;
-    //        float xmax = (i + 1) * dx;
-    //        float ymin = j * dy;
-    //        float ymax = (j + 1) * dy;
-    //        for i = 0 in len(nSamples):
-    //          push new Ray(vec3(random(xmin, xmax), random(ymin, ymax), z));
-    //          ~ draw test spheres here to check if it's working
-
-    glm::vec3 ln = glm::normalize(p - hitPoint);
-    Ray* r = new Ray(hitPoint + (ln * 0.1), ln);
-    samples.push_back(r);
-
-    return sampleCount;
+   int rayCount = 0;
+    glm::vec3 o = glm::vec3(0);
+    float dx = width / nDivsWidth;
+    float dz = height / nDivsHeight;
+    float y = p.y;
+    for (int i = 0; i < nDivsWidth; i++) {
+        for (int j = 0; j < nDivsHeight; j++) {
+            float xMin = i * dx;
+            float xMax = (i + 1) * dx;
+            float zMin = j * dz;
+            float zMax = (j + 1) * dz;
+            for (int i = 0; i < nSamples; i++) {
+                glm::vec3 randLightPos = glm::vec3(ofRandom(xMin, xMax), y, ofRandom(zMin, zMax));
+                glm::vec3 ln = glm::normalize(randLightPos - hitPoint);
+                Ray* r = new Ray(hitPoint + (ln * 0.1), ln);
+                samples.push_back(r);
+                rayCount++;
+            }
+        }
+    }
+    return rayCount;
 }
 
 

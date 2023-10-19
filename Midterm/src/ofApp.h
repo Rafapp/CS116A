@@ -164,8 +164,6 @@ public:
     bool bInteracting = false;
     bool bMouseButton = false;
 
-    AreaLight* areaLight;
-
     /*
      * GUI
      */
