@@ -311,45 +311,43 @@ void RayTracer::Render() {
                     vector<Ray*> lightRays;
                     int rayCount = li->getRaySamples(intersectP, lightRays);
 
-                    bool shadowed = false;
                     float attenuation = 1.0f;
                     for (Ray* r : lightRays) {
                         // Check for shadows in all light rays
                         if (IsShadowed(r, s)) { 
-                            shadowed = true; 
                             attenuation -= 1.0f / rayCount;
                         }
                     }
-                    result *= attenuation;
 
-                    if (!shadowed) {
-                        // No shading
-                        if (!bLamb && !bPhong) {
-                            result += s->diffuseColor;
+                    // Multiply by shadow contributions
+                    result *= attenuation;
+                    
+                    // No shading
+                    if (!bLamb && !bPhong) {
+                        result += s->diffuseColor;
+                    }
+
+                    if (bLamb) {
+                        // Calculate hit object normal
+                        glm::vec3 n;
+
+                        if (dynamic_cast<Sphere*>(s)) {
+                            n = glm::normalize(intersectP - s->p);
+                        }
+                        else if (dynamic_cast<Plane*>(s)) {
+                            n = dynamic_cast<Plane*>(s)->n;
                         }
 
-                        if (bLamb) {
-                            // Calculate hit object normal
-                            glm::vec3 n;
+                        glm::vec3 l = glm::normalize(li->p - intersectP);
+                        float d = glm::distance(li->p, intersectP);
 
-                            if (dynamic_cast<Sphere*>(s)) {
-                                n = glm::normalize(intersectP - s->p);
-                            }
-                            else if (dynamic_cast<Plane*>(s)) {
-                                n = dynamic_cast<Plane*>(s)->n;
-                            }
+                        // Lambert component
+                        result += lambert(s->diffuseColor, li->i, d, n, l);
 
-                            glm::vec3 l = glm::normalize(li->p - intersectP);
-                            float d = glm::distance(li->p, intersectP);
-
-                            // Lambert component
-                            result += lambert(s->diffuseColor, li->i, d, n, l);
-
-                            // Phong component
-                            if (bPhong) {
-                                glm::vec3 v = rOut.d;
-                                result += phong(s->specularColor, li->i, d, 30, n, -l, v);
-                            }
+                        // Phong component
+                        if (bPhong) {
+                            glm::vec3 v = rOut.d;
+                            result += phong(s->specularColor, li->i, d, 30, n, -l, v);
                         }
                     }
                 }
