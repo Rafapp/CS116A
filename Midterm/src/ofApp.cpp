@@ -62,7 +62,7 @@ void ofApp::setup() {
 
     g_position.setup("Position");
     g_position.add(f_areaLightx.setup("x", 0, -1000, 1000));
-    g_position.add(f_areaLighty.setup("y", 10, -1000, 1000));
+    g_position.add(f_areaLighty.setup("y", 0, -1000, 1000));
     g_position.add(f_areaLightz.setup("z", 0, -1000, 1000));
     gui.add(&g_position);
 
@@ -73,22 +73,21 @@ void ofApp::setup() {
     gui.add(&g_sampling);
 
     // Preview cam
-    rt.renderCam.setPosition(glm::vec3(-20, 0, 0));
+    rt.renderCam.setPosition(glm::vec3(20, 0, 0));
     rt.renderCam.lookAt(glm::vec3(0, 0, 0));
 
     // Scene objects
-    rt.sceneObjects.push_back(new Plane(glm::vec3(0, -5, 0), glm::vec3(0, 1, 0), 20, 20, ofColor::lightGray, ofColor::lightGray));
+    rt.sceneObjects.push_back(new Plane(glm::vec3(0, -3, 0), glm::vec3(0, 1, 0), 20, 20, ofColor::lightGray, ofColor::lightGray));
 
-    rt.sceneObjects.push_back(new Sphere(glm::vec3(0, 0, .5), 1, ofColor::red, ofColor::white));
-    rt.sceneObjects.push_back(new Sphere(glm::vec3(-2.5, 0, -0.5), 1, ofColor::green, ofColor::white));
-    rt.sceneObjects.push_back(new Sphere(glm::vec3(2.5, 0.5, 0), 1, ofColor::blue, ofColor::white));
+    rt.sceneObjects.push_back(new Sphere(glm::vec3(3, 0, 0), 1, ofColor::red, ofColor::white));
+    rt.sceneObjects.push_back(new Sphere(glm::vec3(0, 0, 0), 2, ofColor::green, ofColor::white));
+    rt.sceneObjects.push_back(new Sphere(glm::vec3(-5, 0, 0), 3, ofColor::blue, ofColor::white));
 
     //Lights
-    areaLight = new AreaLight(glm::vec3(0, 10, 0), 50.0f); // Keep pointer ref to light, so we can modify its values with ofxGUI
+    areaLight = new AreaLight(glm::vec3(0, 0, 0), 200.0f); // Keep pointer ref to light, so we can modify its values with ofxGUI
     rt.lights.push_back(areaLight);
-    //rt.lights.push_back(new PointLight(glm::vec3(-7.5, 2.5, 0), 50.0f)); // Backlight
-    //rt.lights.push_back(new PointLight(glm::vec3(7.5, 2.5, 0), 50.0f)); // Keylight (front)
-    //rt.lights.push_back(new PointLight(glm::vec3(0, 2.5, 7.5), 50.0f)); // Fill light (left)
+    rt.lights.push_back(new PointLight(glm::vec3(10, 3, 0), 30.0f)); // Keylight (front)
+    rt.lights.push_back(new PointLight(glm::vec3(0, 3, 10), 20.0f)); // Fill light (left)
 
 }
 
@@ -303,7 +302,7 @@ void RayTracer::Render() {
                 glm::vec3 intersectP = rOut.o + rOut.d * s->t;
 
                 // Ambient color
-                ofColor result = s->diffuseColor * 0.25f;
+                ofColor result = s->diffuseColor * .25;
 
                 for (Light* li : lights) {
 
@@ -319,9 +318,6 @@ void RayTracer::Render() {
                         }
                     }
 
-                    // Multiply by shadow contributions
-                    result *= attenuation;
-                    
                     // No shading
                     if (!bLamb && !bPhong) {
                         result += s->diffuseColor;
@@ -350,6 +346,9 @@ void RayTracer::Render() {
                             result += phong(s->specularColor, li->i, d, 30, n, -l, v);
                         }
                     }
+
+                    // Scale by shadow contributions
+                    result *= attenuation;
                 }
 
                 // Set our final resulting color
@@ -397,7 +396,7 @@ void RayTracer::ProgressiveRender() {
                     glm::vec3 intersectP = rOut.o + rOut.d * s->t;
 
                     // Ambient color
-                    ofColor result = s->diffuseColor * 0.25f;
+                    ofColor result = 0;
 
                     for (Light* li : lights) {
 
@@ -412,9 +411,6 @@ void RayTracer::ProgressiveRender() {
                                 attenuation -= 1.0f / rayCount;
                             }
                         }
-
-                        // Multiply by shadow contributions
-                        result *= attenuation;
 
                         // No shading
                         if (!bLamb && !bPhong) {
@@ -444,6 +440,9 @@ void RayTracer::ProgressiveRender() {
                                 result += phong(s->specularColor, li->i, d, 30, n, -l, v);
                             }
                         }
+
+                        // Multiply by shadow contributions
+                        result *= attenuation;
                     }
 
                     // Set our final resulting color
@@ -499,7 +498,6 @@ int AreaLight::getRaySamples(glm::vec3 hitPoint, vector<Ray*>& samples) {
     glm::vec3 o = glm::vec3(0);
     float dx = width / nDivsWidth;
     float dz = height / nDivsHeight;
-    float y = p.y;
     for (int i = 0; i < nDivsWidth; i++) {
         for (int j = 0; j < nDivsHeight; j++) {
             float xMin = i * dx;
@@ -507,7 +505,7 @@ int AreaLight::getRaySamples(glm::vec3 hitPoint, vector<Ray*>& samples) {
             float zMin = j * dz;
             float zMax = (j + 1) * dz;
             for (int i = 0; i < nSamples; i++) {
-                glm::vec3 randLightPos = glm::vec3(ofRandom(xMin, xMax), y, ofRandom(zMin, zMax));
+                glm::vec3 randLightPos = glm::vec3(ofRandom(xMin, xMax), 0, ofRandom(zMin, zMax)) + p;
                 glm::vec3 ln = glm::normalize(randLightPos - hitPoint);
                 Ray* r = new Ray(hitPoint + (ln * 0.1), ln);
                 samples.push_back(r);

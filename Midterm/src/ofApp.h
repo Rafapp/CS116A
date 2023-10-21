@@ -108,13 +108,13 @@ public:
         float dz = height / nDivsHeight;
         float y = p.y;
         for (int i = 0; i <= nDivsWidth; i++) {
-            glm::vec3 start = glm::vec3(i * dx, y, 0);
-            glm::vec3 end = glm::vec3(i * dx, y, height);
+            glm::vec3 start = glm::vec3(i * dx, y, 0) + p;
+            glm::vec3 end = glm::vec3(i * dx, y, height) + p;
             ofDrawLine(start - width / 2, end - width / 2);
         }
         for (int j = 0; j <= nDivsHeight; j++) {
-            glm::vec3 start = glm::vec3(0, y, j * dz);
-            glm::vec3 end = glm::vec3(width, y, j * dz);
+            glm::vec3 start = glm::vec3(0, y, j * dz) + p;
+            glm::vec3 end = glm::vec3(width, y, j * dz) + p;
             ofDrawLine(start - height / 2, end - height/2);
         }
     };
