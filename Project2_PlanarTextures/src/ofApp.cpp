@@ -60,8 +60,8 @@ void ofApp::setup() {
     gui.add(&g_dimensions);
 
     g_position.setup("Position");
-    g_position.add(f_areaLightx.setup("x", 0, -1000, 1000));
-    g_position.add(f_areaLighty.setup("y", 5, -1000, 1000));
+    g_position.add(f_areaLightx.setup("x", 10, -1000, 1000));
+    g_position.add(f_areaLighty.setup("y", 15, -1000, 1000));
     g_position.add(f_areaLightz.setup("z", 0, -1000, 1000));
     gui.add(&g_position);
 
@@ -86,8 +86,17 @@ void ofApp::setup() {
 
     rt.sceneObjects.push_back(groundPlane);
 
-    //Plane* wallPlane = new Plane(glm::vec3(-10, 7, 0), glm::vec3(1, 0, 0), 20, 20, ofColor::lightGray, ofColor::lightGray);
-    //rt.sceneObjects.push_back(wallPlane); // Wall
+    ofImage wallDimg;
+    Texture wallDiffuse("/img/wall.png", wallDimg, 10, 10);
+
+    ofImage wallSimg;
+    Texture wallSpecular("/img/caustics/caust_001.png", wallSimg, 50, 50);
+
+    Plane* wallPlane = new Plane(glm::vec3(-10, 7, 0), glm::vec3(1, 0, 0), PlaneOrientation::xy, 20, 20, ofColor::lightGray, ofColor::lightGray, wallDiffuse, wallSpecular);
+
+    rt.sceneObjects.push_back(wallPlane);
+
+
 
     rt.sceneObjects.push_back(new Sphere(glm::vec3(3, 0, 0), 1, ofColor::red, ofColor::white));
     rt.sceneObjects.push_back(new Sphere(glm::vec3(0, 0, 0), 2, ofColor::green, ofColor::white));
@@ -337,6 +346,9 @@ void RayTracer::Render() {
                             if (p->o == PlaneOrientation::xz) {
                                 result += p->XZplaneToTexture(p->diffuseTexture, intersectP);
                             }
+                            else if (p->o == PlaneOrientation::xy){
+                                result += p->XYplaneToTexture(p->diffuseTexture, intersectP);
+                            }
                         }
                         else result += s->diffuseColor;
                     }
@@ -356,12 +368,28 @@ void RayTracer::Render() {
                         float d = glm::distance(li->p, intersectP);
 
                         // Lambert component
+                        if (Plane* p = dynamic_cast<Plane*>(s)) {
+                            if (p->o == PlaneOrientation::xz) {
+                                result += lambert(p->XZplaneToTexture(p->diffuseTexture, intersectP), li->i, d, n, l);
+                            }
+                            else if (p->o == PlaneOrientation::xy) {
+                                result += lambert(p->XYplaneToTexture(p->diffuseTexture, intersectP), li->i, d, n, l);
+                            }
+                        }
                         result += lambert(s->diffuseColor, li->i, d, n, l);
 
                         // Phong component
                         if (bPhong) {
                             glm::vec3 v = rOut.d;
-                            result += phong(s->specularColor, li->i, d, 30, n, -l, v);
+                            if (Plane* p = dynamic_cast<Plane*>(s)) {
+                                if (p->o == PlaneOrientation::xz) {
+                                    result += phong(p->XZplaneToTexture(p->specularTexture, intersectP), li->i, d, 20, n, -l, v);
+                                }
+                                else if (p->o == PlaneOrientation::xy) {
+                                    result += phong(p->XYplaneToTexture(p->specularTexture, intersectP), li->i, d, 20, n, -l, v);
+                                }
+                            }
+                            result += phong(s->specularColor, li->i, d, 20, n, -l, v);
                         }
                     }
 
@@ -635,8 +663,10 @@ ofColor Plane::XZplaneToTexture(const Texture& texture, const glm::vec3 hit) {
     return texture.image.getColor(u, v);
 }
 ofColor Plane::XYplaneToTexture(const Texture& texture, const glm::vec3 hit) {
-    float u = fmod((hit.x * texture.sx), texture.w);
+    float u = fmod((hit.z * texture.sx), texture.w);
     float v = fmod((hit.y * texture.sy), texture.h);
+    if (u < 0) u += texture.w;
+    if (v < 0) v += texture.h;
     return texture.image.getColor(u, v);
 }
 #pragma endregion
