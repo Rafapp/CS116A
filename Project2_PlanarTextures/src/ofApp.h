@@ -19,6 +19,26 @@ public:
     glm::vec3 o, d;
 };
 
+enum PlaneOrientation {
+    xz,
+    xy
+};
+
+class Texture {
+public:
+    Texture(const string& path, const ofImage& image, const float& sx, const float& sy) :
+    path(path), image(image), sx(sx), sy(sy){
+        load(path);
+    }
+
+    string path;
+    ofImage image;
+    float w, h, sx, sy;
+
+    void load(string path);
+    void draw();
+};
+
 class SceneObject {
 public:
 
@@ -47,12 +67,17 @@ public:
 
 class Plane : public SceneObject {
 public:
-    Plane(glm::vec3 p, glm::vec3 n, float w, float h, ofColor diffuseColor, ofColor specularColor)
-        : SceneObject(p, diffuseColor, specularColor), n(n), w(w), h(h) {
+    Plane(glm::vec3 p, glm::vec3 n, PlaneOrientation o, float w, float h, ofColor diffuseColor, ofColor specularColor, Texture diffuse, Texture specular)
+        : SceneObject(p, diffuseColor, specularColor), n(n), w(w), h(h), o(o), diffuseTexture(diffuse), specularTexture(specular){
     }
     void draw();
     bool intersect(Ray r, SceneObject* s);
+    ofColor XZplaneToTexture(const Texture& texture, const glm::vec3 hit);
+    ofColor XYplaneToTexture(const Texture& texture, const glm::vec3 hit);
 
+    PlaneOrientation o;
+    Texture diffuseTexture;
+    Texture specularTexture;
     ofPlanePrimitive plane;
     glm::vec3 n;
     float w;

@@ -28,7 +28,6 @@ vector<glm::vec3> intersections;
 
 #pragma region openFrameworks
 //--------------------------------------------------------------
-
 void ofApp::setup() {
 
     // General setup
@@ -67,8 +66,8 @@ void ofApp::setup() {
     gui.add(&g_position);
 
     g_sampling.setup("Sampling");
-    g_sampling.add(i_nDivsWidth.setup("x divs", 10));
-    g_sampling.add(i_nDivsHeight.setup("y divs", 10));
+    g_sampling.add(i_nDivsWidth.setup("x divs", 1));
+    g_sampling.add(i_nDivsHeight.setup("y divs", 1));
     g_sampling.add(i_nSamples.setup("# samples", 1));
     gui.add(&g_sampling);
 
@@ -77,7 +76,18 @@ void ofApp::setup() {
     rt.renderCam.lookAt(glm::vec3(0, 0, 0));
 
     // Scene objects
-    rt.sceneObjects.push_back(new Plane(glm::vec3(0, -3, 0), glm::vec3(0, 1, 0), 20, 20, ofColor::lightGray, ofColor::lightGray));
+    ofImage groundDimg;
+    Texture groundDiffuse("/img/water.png", groundDimg,  10, 10);
+
+    ofImage groundSimg;
+    Texture groundSpecular("/img/caustics/caust_001.png", groundDimg, 10, 10);
+
+    Plane* groundPlane = new Plane(glm::vec3(0, -3, 0), glm::vec3(0, 1, 0), PlaneOrientation::xz, 20, 20, ofColor::darkGray, ofColor::darkGray, groundDiffuse, groundSpecular);
+
+    rt.sceneObjects.push_back(groundPlane);
+
+    //Plane* wallPlane = new Plane(glm::vec3(-10, 7, 0), glm::vec3(1, 0, 0), 20, 20, ofColor::lightGray, ofColor::lightGray);
+    //rt.sceneObjects.push_back(wallPlane); // Wall
 
     rt.sceneObjects.push_back(new Sphere(glm::vec3(3, 0, 0), 1, ofColor::red, ofColor::white));
     rt.sceneObjects.push_back(new Sphere(glm::vec3(0, 0, 0), 2, ofColor::green, ofColor::white));
@@ -136,7 +146,6 @@ void ofApp::update() {
 
 void ofApp::draw() {
     ofEnableDepthTest();
-
     rt.renderCam.begin();
     ofSetColor(ofColor::white);
 
@@ -324,7 +333,12 @@ void RayTracer::Render() {
 
                     // No shading
                     if (!bLamb && !bPhong) {
-                        result += s->diffuseColor;
+                        if (Plane* p = dynamic_cast<Plane*>(s)) {
+                            if (p->o == PlaneOrientation::xz) {
+                                result += p->XZplaneToTexture(p->diffuseTexture, intersectP);
+                            }
+                        }
+                        else result += s->diffuseColor;
                     }
 
                     if (bLamb) {
@@ -573,6 +587,23 @@ bool Sphere::intersect(Ray ray, SceneObject* s) {
     return intersect;
 }
 
+void Texture::load(string pathInput) {
+    string path = ofToDataPath(pathInput);
+    if (image.loadImage(path)) {
+        w = image.getWidth();
+        h = image.getHeight();
+        cout << "Loaded: " << path << endl;
+    }
+    else {
+        cout << "Could not load: " << ofToDataPath(path) << endl;
+    }
+}
+
+// Drawing textures for debugging
+void Texture::draw() {
+    image.draw(0, 0);
+}
+
 void Plane::draw() {
     ofSetColor(diffuseColor);
     ofFill();
@@ -594,5 +625,18 @@ bool Plane::intersect(Ray ray, SceneObject* s) {
     bool intersect = glm::intersectRayPlane(ray.o, ray.d, plane->p, plane->n, t);
     s->t = t;
     return intersect;
+}
+
+ofColor Plane::XZplaneToTexture(const Texture& texture, const glm::vec3 hit) {
+    float u = fmod((hit.x * texture.sx), texture.w);
+    float v = fmod((hit.z * texture.sy), texture.h);
+    if (u < 0) u += texture.w;
+    if (v < 0) v += texture.h;
+    return texture.image.getColor(u, v);
+}
+ofColor Plane::XYplaneToTexture(const Texture& texture, const glm::vec3 hit) {
+    float u = fmod((hit.x * texture.sx), texture.w);
+    float v = fmod((hit.y * texture.sy), texture.h);
+    return texture.image.getColor(u, v);
 }
 #pragma endregion
