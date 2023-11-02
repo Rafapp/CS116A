@@ -78,6 +78,7 @@ void ofApp::setup() {
 
     // Scene objects
     rt.sceneObjects.push_back(new Plane(glm::vec3(0, -3, 0), glm::vec3(0, 1, 0), 20, 20, ofColor::lightGray, ofColor::lightGray));
+
     rt.sceneObjects.push_back(new Sphere(glm::vec3(3, 0, 0), 1, ofColor::red, ofColor::white));
     rt.sceneObjects.push_back(new Sphere(glm::vec3(0, 0, 0), 2, ofColor::green, ofColor::white));
     rt.sceneObjects.push_back(new Sphere(glm::vec3(-5, 0, 0), 3, ofColor::blue, ofColor::white));
@@ -87,10 +88,6 @@ void ofApp::setup() {
     rt.lights.push_back(areaLight);
    // rt.lights.push_back(new PointLight(glm::vec3(10, 3, 0), 30.0f)); // Keylight (front)
     //rt.lights.push_back(new PointLight(glm::vec3(0, 3, 10), 20.0f)); // Fill light (left)
-
-    // Textures
-    /*rt.waterTexture.load("/img/water.png");
-    rt.causticTexture.load("/img/caust_001.png");*/
 
 }
 
@@ -142,9 +139,6 @@ void ofApp::draw() {
 
     rt.renderCam.begin();
     ofSetColor(ofColor::white);
-
-    /*rt.causticTexture.draw();
-    rt.waterTexture.draw();*/
 
     // Draw objects (OF preview)
     if (t_showGrid) ofDrawGrid();
@@ -544,31 +538,6 @@ void ViewPlane::update() {
     rt.viewPlane.plane.setOrientation(rt.renderCam.getOrientationQuat());
     rt.viewPlane.n = rt.renderCam.getLookAtDir();
 }
-
-// Loading textures
-void Texture::load(string pathInput) {
-    string path = ofToDataPath(pathInput);
-    if (image.loadImage(path)) {
-        cout << "Loaded: " << path << endl;
-    }
-    else {
-        cout << "Could not load: " << ofToDataPath(path) << endl;
-    }
-}
-
-// Drawing textures for debugging
-void Texture::draw() {
-    image.draw(0, 0);
-}
-
-// Convert from xz plane coordinates to uv in texture (bottom plane)
-ofColor Plane::PlanePointToTexture(const glm::vec3& point){
-    float u = fmod((point.x + texture.dx / texture.sx), 1.0);
-    float v = fmod((point.y + texture.dy / texture.sy), 1.0);
-    // Note, gotta do uv back to xy pixels
-    return ofColor::black;
-}
-
 
 // Convert from uv plane coordinates, using 2 basis vectors
 glm::vec3 ViewPlane::PlaneToWorld(int u, int v) {

@@ -19,16 +19,6 @@ public:
     glm::vec3 o, d;
 };
 
-class Texture {
-public:
-    Texture(){};
-    string path;
-    ofImage image;
-    int w, h, dx, dy, sx, sy;
-    void load(string path);
-    void draw();
-};
-
 class SceneObject {
 public:
 
@@ -62,10 +52,8 @@ public:
     }
     void draw();
     bool intersect(Ray r, SceneObject* s);
-    ofColor PlanePointToTexture(const glm::vec3& point);
 
     ofPlanePrimitive plane;
-    Texture texture;
     glm::vec3 n;
     float w;
     float h;
@@ -141,10 +129,6 @@ public:
     ofEasyCam renderCam;
 
     ViewPlane viewPlane;
-
-    /*Texture waterTexture;
-    Texture causticTexture;*/
-
     ofImage out;
 
     vector<SceneObject*> sceneObjects;
