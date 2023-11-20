@@ -66,13 +66,13 @@ void ofApp::setup() {
     gui.add(&g_position);
 
     g_sampling.setup("Sampling");
-    g_sampling.add(i_nDivsWidth.setup("x divs", 1));
-    g_sampling.add(i_nDivsHeight.setup("y divs", 1));
+    g_sampling.add(i_nDivsWidth.setup("x divs", 10));
+    g_sampling.add(i_nDivsHeight.setup("y divs", 10));
     g_sampling.add(i_nSamples.setup("# samples", 1));
     gui.add(&g_sampling);
 
     // Preview cam
-    rt.renderCam.setPosition(glm::vec3(20, 0, 0));
+    rt.renderCam.setPosition(glm::vec3(5, 5, -5));
     rt.renderCam.lookAt(glm::vec3(0, 0, 0));
 
     // Scene objects
@@ -80,7 +80,7 @@ void ofApp::setup() {
     Texture groundDiffuse("/img/water.png", groundDimg,  10, 10);
 
     ofImage groundSimg;
-    Texture groundSpecular("/img/caustics/caust_001.png", groundDimg, 10, 10);
+    Texture groundSpecular("/img/caustics/caust_016.png", groundDimg, 10, 10);
 
     Plane* groundPlane = new Plane(glm::vec3(0, -3, 0), glm::vec3(0, 1, 0), PlaneOrientation::xz, 20, 20, ofColor::darkGray, ofColor::darkGray, groundDiffuse, groundSpecular);
 
@@ -90,7 +90,7 @@ void ofApp::setup() {
     Texture wallDiffuse("/img/wall.png", wallDimg, 10, 10);
 
     ofImage wallSimg;
-    Texture wallSpecular("/img/caustics/caust_001.png", wallSimg, 50, 50);
+    Texture wallSpecular("/img/caustics/caust_016.png", wallSimg, 50, 50);
 
     Plane* wallPlane = new Plane(glm::vec3(-10, 7, 0), glm::vec3(1, 0, 0), PlaneOrientation::xy, 20, 20, ofColor::lightGray, ofColor::lightGray, wallDiffuse, wallSpecular);
 
@@ -657,7 +657,7 @@ bool Plane::intersect(Ray ray, SceneObject* s) {
 
 ofColor Plane::XZplaneToTexture(const Texture& texture, const glm::vec3 hit) {
     float u = fmod((hit.x * texture.sx), texture.w);
-    float v = fmod((hit.z * texture.sy), texture.h);
+    float v = fmod((hit.z * texture.sy + 140), texture.h);
     if (u < 0) u += texture.w;
     if (v < 0) v += texture.h;
     return texture.image.getColor(u, v);
